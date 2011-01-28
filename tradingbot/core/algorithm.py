@@ -34,19 +34,20 @@ class Pivot(object):
                                   round(predict_stock.rl[0], 3)]))
 
     def isWorth(self, name):
-        stock = [x.sl for x in self.predict_stocks]
-        for support in stock:
-            for sup_level in support:
-                if self.graph.isDoji(name) and \
-                        self.graph.isClose(name, sup_level):
-                    self.logger.info("It worth to {mode} on {prize}"
-                                     .format(mode=bold(green(buy)),
-                                             price=bold(sup_level)))
+        stock = [x.sl for x in self.predict_stocks if x.name == name][0]
+        if self.graph.isDoji(name):
+            for support in stock:
+                if self.graph.isClose(name, support):
+                    self.logger.info(
+                        "It worth to {mode} {product} on {price}"
+                        .format(mode=bold(green("buy")),
+                                price=bold(support)),
+                                product=bold(name))
 
     def start(self):
         self.graph.start()
         for y in range(2):
-            time.sleep(60)
+            time.sleep(65)
             self.getPivotPoints()
             for x in self.predict_stocks:
                 self.isWorth(x.name)

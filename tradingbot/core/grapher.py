@@ -16,12 +16,12 @@ class Grapher(object):
         self.stocks = []
         self.terminate = False
 
-    def _wait(self, interval, condition):
+    def _waitTerminate(self, interval):
         for x in range(interval):
-            if condition:
+            if self.terminate is False:
                 time.sleep(1)
             else:
-                break
+                return 0
 
     def _closeTo(self, val1, val2, swap=0.05):
         swap2 = val2 * swap
@@ -53,6 +53,7 @@ class Grapher(object):
 
     def addPrefs(self):
         self.api.clearPrefs()
+        time.sleep(2)
         self.api.addPrefs(self.prefs)
         self.config.config['MONITOR']['initiated'] = '1'
         self.config.write()
@@ -65,16 +66,18 @@ class Grapher(object):
 
     def candlestickUpdate(self):
         while self.terminate is False:
-            self._wait(60, self.terminate is False)
-            for stock in self.api.stocks:
-                if not [x for x in self.stocks if x.name == stock.name]:
-                    self.stocks.append(CandlestickStock(stock.name))
-                candle = [x for x in self.stocks if x.name == stock.name][0]
-                prices = [var[0] for var in stock.vars]
-                sent = [var[1] for var in stock.vars][-1]
-                candle.addRecord(max(prices), min(prices), prices[0],
-                                 prices[-1])
-                candle.sentiment = sent
+            tm = self._waitTerminate(60)
+            if tm != 0:
+                for stock in self.api.stocks:
+                    if not [x for x in self.stocks if x.name == stock.name]:
+                        self.stocks.append(CandlestickStock(stock.name))
+                    candle = [x for x in self.stocks if x.name == stock.name][0]
+                    prices = [var[0] for var in stock.vars]
+                    sent = [var[1] for var in stock.vars][-1]
+                    candle.addRecord(max(prices), min(prices), prices[0],
+                                     prices[-1])
+                    candle.sentiment = sent
+                self.logger.debug("updated candlestick")
 
     def isDoji(self, name):
         stock = [x for x in self.stocks if x.name == name][0]
@@ -87,11 +90,11 @@ class Grapher(object):
             return 0
 
     def isClose(self, name, value):
-        price = [x.vars[-1] for x in self.api.stocks if x.name == name][0]
+        price = float([x.vars[-1] for x in self.api.stocks if x.name == name][0][0])
         swap = float(self.config.config['STRATEGIES']['swap'])
-        self.logger.debug(price + " - " + str(type(price)))
-        self.logger.debug(value + " - " + str(type(value)))
-        self._closeTo(price, value, swap)
+        if self._closeTo(price, value, swap):
+            self.logger.debug("{} is close to {}".format(price, value))
+            return 1
 
 
 class CandlestickStock(object):
