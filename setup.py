@@ -2,12 +2,13 @@ from setuptools import setup, find_packages
 
 setup(
     name="tradingbot",
-    version="0.1a0",
-    packages=['tradingbot'],
+    version="1.0a1",
+    packages=['tradingbot', 'tradingbot.core'],
     install_requires=[
-        'trading212api',
-        'numpy'
+        'trading212api'
     ],
+    include_package_data=True,
+    package_data={'': ['*.conf']},
     zip_safe=False,
     author="Federico Lolli",
     author_email="federico123579@gmail.com",
@@ -15,6 +16,11 @@ setup(
     license="MIT",
     keywords="trading bot",
     url="https://github.com/federico123579/TradingBot",
+    entry_points={
+        'console_scripts': [
+            'tradingbot = tradingbot.core.bot:main'
+        ]   
+    },
     classifiers=[
         'Development Status :: 3 - Alpha',
         'Environment :: Web Environment',
