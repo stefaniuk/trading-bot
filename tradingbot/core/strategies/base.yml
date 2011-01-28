@@ -1,0 +1,5 @@
+sentiment_ini: 
+- [0.8, 0.5]
+support: 0.5
+doji: 0.4
+sentiment_mult: 1.5

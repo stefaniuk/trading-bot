@@ -3,13 +3,13 @@ from setuptools import setup, find_packages
 setup(
     name="tradingbot",
     version="1.0a1",
-    packages=['tradingbot', 'tradingbot.core'],
+    packages=find_packages(),
     install_requires=[
         'trading212api',
         'pyyaml'
     ],
     include_package_data=True,
-    package_data={'': ['*.conf']},
+    package_data={'': ['*.conf'], 'tradingbot.core': ['strategies/*.yml']},
     zip_safe=False,
     author="Federico Lolli",
     author_email="federico123579@gmail.com",
@@ -27,8 +27,6 @@ setup(
         'Environment :: Web Environment',
         'Intended Audience :: Developers',
         'License :: OSI Approved :: MIT License',
-        'Programming Language :: Python :: 3.4',
-        'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
         'Topic :: Software Development :: User Interfaces',
         'Topic :: System :: Emulators'

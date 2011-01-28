@@ -1,58 +1,77 @@
 import time
+import os.path
+from threading import Thread
 from .color import *
 from .logger import *
+from ..configurer import Configurer
+from .stocks import PredictStock
 from .grapher import Grapher
 
 
-class Pivot(object):
+class BaseAlgorithm(object):
     def __init__(self, conf):
-        logger.debug("Pivot algortihm initialized")
         self.conf = conf
         self.graph = Grapher(self.conf)
-        self.predict_stocks = []
-
-    def getPivotPoints(self):
-        for stock in self.graph.stocks:
-            high = max([float(x[1]) for x in stock.records])
-            low = min([float(x[2]) for x in stock.records])
-            close = [float(x[3]) for x in stock.records][-1]
-            if not [x for x in self.predict_stocks if x.name == stock.name]:
-                self.predict_stocks.append(predictStock(stock.name))
-            predict_stock = [
-                x for x in self.predict_stocks if x.name == stock.name][0]
-            predict_stock.pp = (high + low + close) / 3
-            predict_stock.sl = []
-            predict_stock.sl.append((predict_stock.pp * 2) - high)
-            predict_stock.sl.append(predict_stock.pp - (high - low))
-            predict_stock.rl = []
-            predict_stock.rl.append((predict_stock.pp * 2) - low)
-            predict_stock.rl.append(predict_stock.pp + (high - low))
-            logger.info(bold(predict_stock.name) + ': ' +
-                        str([round(predict_stock.pp, 3),
-                             round(predict_stock.sl[0], 3),
-                             round(predict_stock.rl[0], 3)]))
-
-    def isWorth(self, name):
-        stock = [x.sl for x in self.predict_stocks if x.name == name][0]
-        if self.graph.isDoji(name):
-            for support in stock:
-                if self.graph.isClose(name, support):
-                    self.logger.info(f"It's worth to {bold(green(buy))} " +
-                        "{bold(name)} on {bold(support)}")
-
-    def start(self):
-        self.graph.start()
-        for y in range(2):
-            time.sleep(65)
-            self.getPivotPoints()
-            for x in self.predict_stocks:
-                self.isWorth(x.name)
+        self.stocks = []
 
     def stop(self):
         self.graph.stop()
 
 
-class predictStock(object):
-    def __init__(self, name):
-        self.name = name
-        self.prediction = 0
+class Pivot(BaseAlgorithm):
+    def __init__(self, conf):
+        super().__init__(conf)
+        strat_conf = Configurer(os.path.join(
+            os.path.dirname(__file__), 'strategies',
+            self.conf.config['strategy']['strategy'] + '.yml'))
+        strat_conf.read()
+        self.strategy = strat_conf.config
+        logger.debug("Pivot algortihm initialized")
+    
+    def getPivotPoints(self):
+        for stock in self.graph.stocks:
+            high = max([float(x[1]) for x in stock.records])
+            low = min([float(x[2]) for x in stock.records])
+            close = [float(x[3]) for x in stock.records][-1]
+            if stock not in [x.candlestick for x in self.stocks]:
+                self.stocks.append(PredictStock(stock))
+            p_stock = [x for x in self.stocks if x.candlestick == stock][0]
+            p_stock.pp = (high + low + close) / 3
+            p_stock.sl = []
+            p_stock.sl.append((p_stock.pp * 2) - high)
+            p_stock.sl.append(p_stock.pp - (high - low))
+            p_stock.rl = []
+            p_stock.rl.append((p_stock.pp * 2) - low)
+            p_stock.rl.append(p_stock.pp + (high - low))
+
+    def isWorth(self, name):
+        stock = [x for x in self.stocks if x.name == name][0]
+        stock.prediction = 0
+        s = self.strategy
+        for val in s['sentiment_ini']:
+            if stock.candlestick.sentiment >= val[0]:
+                stock.add(val[1])
+        for support in stock.sl:
+            if self.graph.isClose(name, support):
+                stock.add(s['support'])
+        if self.graph.isDoji(name):
+            stock.add(s['doji'])
+        stock.multiply(stock.candlestick.sentiment*s['sentiment_mult'])
+        logger.debug(f"sentiment: {bold(stock.candlestick.sentiment)}")
+        logger.info(f"It's worth to {bold(green('buy'))} " +
+            f"{bold(name)} on {bold(blue(stock.prediction))}")
+
+    def run(self):
+        while self.graph.live.wait(10):
+            self.getPivotPoints()
+            for x in self.stocks:
+                self.isWorth(x.name)
+            self.graph._waitTerminate(60)
+
+    def start(self):
+        self.graph.start()
+        T3 = Thread(target=self.run)
+        T3.deamon = True
+        time.sleep(65)
+        T3.start()
+        logger.debug("Pivoting thread #3 launched")

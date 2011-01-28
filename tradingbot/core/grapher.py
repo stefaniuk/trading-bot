@@ -1,9 +1,10 @@
 import time
-from threading import Thread
+from threading import Thread, Event
 import tradingAPI.exceptions
 from tradingAPI import API
-from .color import *
+from .stocks import CandlestickStock
 from .logger import *
+from .color import *
 
 
 class Grapher(object):
@@ -14,21 +15,21 @@ class Grapher(object):
         self.api = API(self.config.config['logger_level'])
         self.prefs = self.monitor['stocks']
         self.stocks = []
-        self.terminate = False
+        self.live = Event()
 
     def _waitTerminate(self, interval):
         for x in range(interval):
-            if self.terminate is False:
+            if self.live.is_set():
                 time.sleep(1)
             else:
-                return 0
+                return False
 
     def _closeTo(self, val1, val2, swap=0.05):
         swap2 = val2 * swap
         if val2 - swap2 < val1 and val1 < val2 + swap2:
-            return 1
+            return True
         else:
-            return 0
+            return False
 
     def start(self):
         self.api.launch()
@@ -40,12 +41,13 @@ class Grapher(object):
         T1.deamon = True
         T2.deamon = True
         T1.start()
-        logger.debug("Price updater thread #1 launched")
         T2.start()
+        self.live.set()
+        logger.debug("Price updater thread #1 launched")
         logger.debug("Candlestick updater thread #2 launched")
 
     def stop(self):
-        self.terminate = True
+        self.live.clear()
         try:
             self.api.logout()
         except tradingAPI.exceptions.BrowserException as e:
@@ -53,19 +55,18 @@ class Grapher(object):
 
     def addPrefs(self):
         self.api.clearPrefs()
-        time.sleep(2)
         self.api.addPrefs(self.prefs)
-        self.config.config['initiated'] = '1'
+        self.config.config['monitor']['initiated'] = 1
         self.config.save()
         logger.debug('Preferencies added')
 
     def updatePrice(self):
-        while self.terminate is False:
+        while self.live.wait(10):
             self.api.checkStocks(self.prefs)
             time.sleep(1)
 
     def candlestickUpdate(self):
-        while self.terminate is False:
+        while self.live.wait(10):
             tm = self._waitTerminate(60)
             if tm != 0:
                 count = 0
@@ -80,6 +81,9 @@ class Grapher(object):
                                          prices[-1])
                         candle.sentiment = sent
                         count += 1
+                    else:
+                        if [x for x in self.stocks if x.name == stock.name]:
+                            self.stocks.remove([x for x in self.stocks if x.name == stock.name][0])
                 logger.debug(f"updated {count} candlestick")
 
     def isDoji(self, name):
@@ -87,23 +91,14 @@ class Grapher(object):
         op = stock.records[-1][0]
         cl = stock.records[-1][-1]
         if op == cl:
-            logger.debug("doji on {bold(name)}")
-            return 1
+            logger.debug(f"doji on {bold(name)}")
+            return True
         else:
-            return 0
+            return False
 
     def isClose(self, name, value):
         price = float([x.vars[-1] for x in self.api.stocks if x.name == name][0][0])
         swap = float(self.config.config['strategy']['swap'])
         if self._closeTo(price, value, swap):
-            logger.debug("{price} is close to {value}")
-            return 1
-
-
-class CandlestickStock(object):
-    def __init__(self, name):
-        self.name = name
-        self.records = []
-
-    def addRecord(self, openstock, maxstock, minstock, closestock):
-        self.records.append([openstock, maxstock, minstock, closestock])
+            logger.debug(f"{price} is close to {value}")
+            return True
