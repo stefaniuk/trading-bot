@@ -23,20 +23,30 @@ class Pivot(object):
                 self.predict_stocks.append(predictStock(stock.name))
             predict_stock = [x for x in self.predict_stocks if x.name == stock.name][0]
             predict_stock.pp = (high + low + close) / 3
-            predict_stock.s1 = (predict_stock.pp * 2) - high
-            predict_stock.s2 = predict_stock.pp - (high - low)
-            predict_stock.r1 = (predict_stock.pp * 2) - low
-            predict_stock.r2 = predict_stock.pp + (high - low)
+            predict_stock.sl = []
+            predict_stock.sl.append((predict_stock.pp * 2) - high)
+            predict_stock.sl.append(predict_stock.pp - (high - low))
+            predict_stock.rl = []
+            predict_stock.rl.append((predict_stock.pp * 2) - low)
+            predict_stock.rl.append(predict_stock.pp + (high - low))
             self.logger.info(bold(predict_stock.name) + ': ' +\
-                str([round(predict_stock.pp, 3), round(predict_stock.s1, 3), round(predict_stock.r1, 3)]))
+                str([round(predict_stock.pp, 3), round(predict_stock.sl[0], 3), round(predict_stock.rl[0], 3)]))
+
+    def isWorth(self, name):
+        stock = [x.sl for x in self.predict_stocks]
+        for support in stock:
+            for sup_level in support:
+                if self.graph.isDoji(name) and self.graph.isClose(name, sup_level):
+                    self.logger.info("It worth to {mode} on {prize}"\
+                        .format(mode=bold(green(buy)), price=bold(sup_level)))
 
     def start(self):
         self.graph.start()
         for y in range(2):
-            time.sleep(120)
+            time.sleep(60)
             self.getPivotPoints()
-            # for x in self.predict_stocks:
-            #     print(printer.info(bold(x.name) + ': ' + str(x.stack)))
+            for x in self.predict_stocks:
+                self.isWorth(x.name)
 
     def stop(self):
         self.graph.stop()
