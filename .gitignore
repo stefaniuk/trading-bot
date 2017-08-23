@@ -3,8 +3,8 @@ __pycache__/
 *.py[cod]
 *$py.class
 
-# C extensions
-*.so
+# conf
+*.ini
 
 # Distribution / packaging
 .Python
@@ -34,6 +34,7 @@ htmlcov/
 .coverage
 .coverage.*
 .cache
+*.log
 nosetests.xml
 
 # Sphinx documentation
