@@ -33,7 +33,9 @@ class Grapher(object):
                     self.stocks.append(CandlestickStock(stock.name))
                 candle = [x for x in self.stocks if x.name == stock.name][0]
                 prices = [var[1] for var in stock.vars]
+                sent = [var[2] for var in stock.vars][-1]
                 candle.addRecord(max(prices), min(prices), prices[0], prices[-1])
+                candle.sentiment = sent
                 self.api.stocks = []
                 # DEL
                 print([x[-1] for x in candle.records][-1])
