@@ -37,7 +37,7 @@ def white(str):
 class info(object):
     @staticmethod
     def header(string):
-        return ''.join([BOLD, BLUE, '---', str(string.upper()), WHITE])
+        return ''.join([BOLD, BLUE, '------ ', str(string.upper(string)), ' ------', WHITE])
     @staticmethod
     def info(string):
         return '[' + BLUE + '#' + WHITE + '] ' + str(string)
