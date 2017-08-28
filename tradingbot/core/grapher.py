@@ -3,20 +3,21 @@ import asyncio
 
 class Grapher(object):
     def __init__(self, conf):
+        self.api = API()
         self.config = conf
         self.monitor = conf.config['MONITOR']
         self.prefs = eval(self.monitor['stocks'])
         self.stocks = []
 
     def start(self):
-        self.api = API()
+        self.api.launch()
         self.api.login(self.monitor['username'], self.monitor['password'])
         if not self.monitor['initiated']:
             self.addPrefs()
 
     def addPrefs(self):
-        self.clearPrefs()
-        self.addPrefs(self.prefs)
+        self.api.clearPrefs()
+        self.api.addPrefs(self.prefs)
         self.config.config['MONITOR']['initiated'] = 1
         self.config.write()
 
