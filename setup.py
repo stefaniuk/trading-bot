@@ -5,7 +5,8 @@ setup(
     version="0.1a0",
     packages=['tradingbot'],
     install_requires=[
-        'trading212api'
+        'trading212api',
+        'numpy'
     ],
     zip_safe=False,
     author="Federico Lolli",
