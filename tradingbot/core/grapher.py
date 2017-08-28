@@ -1,5 +1,7 @@
+from threading import Thread
 from tradingAPI import API
-import asyncio
+
+import time
 
 
 class Grapher(object):
@@ -9,27 +11,38 @@ class Grapher(object):
         self.monitor = conf.config['MONITOR']
         self.prefs = eval(self.monitor['stocks'])
         self.stocks = []
+        self.terminate = False
 
     def start(self):
         self.api.launch()
         self.api.login(self.monitor['username'], self.monitor['password'])
-        if not self.monitor['initiated']:
+        if not int(self.monitor['initiated']):
             self.addPrefs()
+        T1 = Thread(target=self.updatePrice)
+        T2 = Thread(target=self.candlestickUpdate)
+        T1.deamon = True
+        T2.deamon = True
+        T1.start()
+        T2.start()
+
+    def stop(self):
+        self.terminate = True
+        self.api.logout()
 
     def addPrefs(self):
         self.api.clearPrefs()
         self.api.addPrefs(self.prefs)
-        self.config.config['MONITOR']['initiated'] = 1
+        self.config.config['MONITOR']['initiated'] = '1'
         self.config.write()
 
-    async def updatePrice(self):
-        while True:
+    def updatePrice(self):
+        while self.terminate == False:
             self.api.checkStocks(self.prefs)
-            await asyncio.sleep(1)
+            time.sleep(1)
 
-    async def candlestickUpdate(self):
-        while True:
-            await asyncio.sleep(60)
+    def candlestickUpdate(self):
+        while self.terminate == False:
+            time.sleep(60)
             for stock in self.api.stocks:
                 if not [x for x in self.stocks if x.name == stock.name]:
                     self.stocks.append(CandlestickStock(stock.name))
@@ -41,7 +54,7 @@ class Grapher(object):
                 candle.sentiment = sent
                 self.api.stocks = []
                 # DEL
-                print([x[-1] for x in candle.records][-1])
+                # print([x[-1] for x in candle.records][-1])
 
 
 class CandlestickStock(object):

@@ -9,8 +9,7 @@ class Bot(object):
     def __init__(self):
         self.api = API()
         self.config = Configurer("data.ini")
-        self.pivot = Pivot(self.api, self.config)
-
+        
     def conf(self):
         if not self.config.checkFile():
             print(info.header("config"))
@@ -32,3 +31,10 @@ class Bot(object):
             self.config.addMonitor(username2, password2, stocks)
         else:
             self.config.read()
+
+    def start(self):
+        self.pivot = Pivot(self.api, self.config)
+        self.pivot.start()
+
+    def stop(self):
+        self.pivot.stop()
