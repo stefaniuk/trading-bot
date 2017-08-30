@@ -8,6 +8,7 @@ A trade bot for investing in trading212.com broker service.
 Just install it with pip.
 
 ```shell
+sudo apt-get install xvfb
 pip install tradingbot
 ```
 
@@ -15,13 +16,12 @@ pip install tradingbot
 ### Built With
 
 - python _v3.6_
-- trading212api _v0.1a2_
+- trading212api _v0.1b3_
 
 ### Prerequisites
 
 - Python3.6
-- Firefox
-- geckodriver
+- xvfb
 
 ### Setting up Dev
 
@@ -30,10 +30,11 @@ the project further:
 
 ```shell
 git clone https://github.com/federico123579/TradingBot.git
+sudo apt-get install xvfb
 cd TradingBot/
 python3.6 -m venv env
-. env/bin//activate
-pip install trading212api
+. env/bin/activate
+pip setup.py install
 ```
 
 ## Versioning

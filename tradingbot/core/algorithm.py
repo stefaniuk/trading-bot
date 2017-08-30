@@ -1,24 +1,24 @@
-import asyncio
-from numpy import mean
+import time
+# from numpy import mean
 
+from .color import *
 from .grapher import Grapher
 
 
-import time
-
-
 class Pivot(object):
-    def __init__(self, api, conf):
+    def __init__(self, api, conf, logger):
+        self.logger = logger
+        self.logger.debug("Pivot algortihm initialized")
         self.api = api
         self.conf = conf
-        self.graph = Grapher(self.conf)
+        self.graph = Grapher(self.conf, self.logger)
         self.predict_stocks = []
 
     def getPivotPoints(self):
         for stock in self.graph.stocks:
-            high = mean([float(x[1]) for x in stock.records])
-            low = mean([float(x[2]) for x in stock.records])
-            close = mean([float(x[3]) for x in stock.records])
+            high = max([float(x[1]) for x in stock.records])
+            low = min([float(x[2]) for x in stock.records])
+            close = [float(x[3]) for x in stock.records][-1]
             if not [x for x in self.predict_stocks if x.name == stock.name]:
                 self.predict_stocks.append(predictStock(stock.name))
             predict_stock = [x for x in self.predict_stocks if x.name == stock.name][0]
@@ -27,14 +27,16 @@ class Pivot(object):
             predict_stock.s2 = predict_stock.pp - (high - low)
             predict_stock.r1 = (predict_stock.pp * 2) - low
             predict_stock.r2 = predict_stock.pp + (high - low)
-            predict_stock.stack = [predict_stock.pp, predict_stock.s1, predict_stock.r1]
+            self.logger.info(bold(predict_stock.name) + ': ' +\
+                str([round(predict_stock.pp, 3), round(predict_stock.s1, 3), round(predict_stock.r1, 3)]))
 
     def start(self):
         self.graph.start()
-        for y in range(1):
-            time.sleep(70)
+        for y in range(2):
+            time.sleep(120)
             self.getPivotPoints()
-            print([x.stack for x in self.predict_stocks if x.name == 'bitcoin'])
+            # for x in self.predict_stocks:
+            #     print(printer.info(bold(x.name) + ': ' + str(x.stack)))
 
     def stop(self):
         self.graph.stop()

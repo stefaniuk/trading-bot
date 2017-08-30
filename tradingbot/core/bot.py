@@ -2,8 +2,10 @@ from tradingAPI import API
 from getpass import getpass
 
 from .color import *
+from .logger import *
 from .config import Configurer
 from .algorithm import *
+
 
 class Bot(object):
     def __init__(self):
@@ -12,27 +14,31 @@ class Bot(object):
         
     def conf(self):
         if not self.config.checkFile():
-            print(info.header("config"))
+            self.config.config['GENERAL'] = {'debug_level': 'DEBUG'}
+            self.config.write()
+            print(printer.header("config"))
             print("Add your credentials")
             print("for Trading212")
             print(bold(blue("--------------------")))
-            username = input(info.user_input("Username: "))
-            password = getpass(info.user_input("Password: "))
+            username = input(printer.user_input("Username: "))
+            password = getpass(printer.user_input("Password: "))
             print(bold(blue("--------------------")))
             print("Add your information")
             print("for a monitoring")
             print("account")
             print(bold(blue("--------------------")))
-            username2 = input(info.user_input("Username: "))
-            password2 = getpass(info.user_input("Password: "))
-            stocks = input(info.user_input("Favourite stocks (sep by spaces): ")).split(' ')
+            username2 = input(printer.user_input("Username: "))
+            password2 = getpass(printer.user_input("Password: "))
+            stocks = input(printer.user_input("Favourite stocks (sep by spaces): ")).split(' ')
             self.config.addLogin(username, password)
             self.config.addMonitor(username2, password2, stocks)
         else:
             self.config.read()
 
     def start(self):
-        self.pivot = Pivot(self.api, self.config)
+        self.conf()
+        self.logger = logger(self.config.config['GENERAL']['debug_level'])
+        self.pivot = Pivot(self.api, self.config, self.logger)
         self.pivot.start()
 
     def stop(self):

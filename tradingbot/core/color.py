@@ -1,7 +1,3 @@
-'''
-Module that contains all ANSCII escape colors.
-'''
-
 # CONSTANTS
 CYAN = '\033[96m'
 PURPLE = '\033[95m'
@@ -13,6 +9,7 @@ WHITE = '\033[0m'
 MAGENTA = '\033[35m'
 BOLD = '\033[01m'
 UNDERLINE = '\033[04m'
+
 
 # COLOR FUNCTIONS
 def bold(str):
@@ -34,34 +31,31 @@ def yellow(str):
 def white(str):
     return WHITE + str + WHITE
 
-class info(object):
+class printer(object):
     @staticmethod
     def header(string):
-        return ''.join([BOLD, BLUE, '------ ', str(string.upper()), ' ------', WHITE])
+        return bold(blue('------ ' + str(string.upper()) + ' ------'))
+
     @staticmethod
-    def info(string):
-        return '[' + BLUE + '#' + WHITE + '] ' + str(string)
+    def process(string=''):
+        return '[' + cyan('+') + '] ' + str(string)
+
     @staticmethod
-    def process(string):
-        return '[' + YELLOW + '+' + WHITE + '] ' + str(string)
+    def info(string=''):
+        return '[' + blue('#') + '] ' + str(string)
+
     @staticmethod
-    def config(string):
-        return '[' + MAGENTA + '@' + WHITE + '] ' + str(string)
+    def warning(string=''):
+        return '[' + yellow('-') + '] ' + str(string)
+
     @staticmethod
-    def user_input(string):
-        return '[' + GREEN + '$' + WHITE + '] ' + str(string)
+    def error(string=''):
+        return '[' + magenta('=') + '] ' + str(string)
+
+    @staticmethod    
+    def critical(string=''):
+        return '[' + red('~') + '] ' + str(string)
+
     @staticmethod
-    def error(string):
-        return ''.join([RED, BOLD, '[*] ERROR: ', str(string).upper(), WHITE])
-    @staticmethod
-    def success(string):
-        return ''.join([GREEN, str(string), WHITE])
-    @staticmethod
-    def fail(string):
-        return ''.join([RED, str(string), WHITE])
-    @staticmethod
-    def bold(string):
-        return ''.join([BOLD, str(string), WHITE])
-    @staticmethod
-    def underline(string):
-        return ''.join([UNDERLINE, str(string), WHITE])
+    def user_input(string=''):
+        return '[' + green('$') + '] ' + str(string)
