@@ -1,11 +1,13 @@
+import time
 from threading import Thread
 from tradingAPI import API
 
-import time
 
 
 class Grapher(object):
-    def __init__(self, conf):
+    def __init__(self, conf, logger):
+        self.logger = logger
+        self.logger.debug("Grapher initialized")
         self.api = API()
         self.config = conf
         self.monitor = conf.config['MONITOR']
@@ -13,9 +15,17 @@ class Grapher(object):
         self.stocks = []
         self.terminate = False
 
+    def _wait(self, interval, condition):
+        while condition:
+            for x in range(interval):
+                time.sleep(1)
+            break
+
     def start(self):
         self.api.launch()
+        self.logger.debug("Launched browser")
         self.api.login(self.monitor['username'], self.monitor['password'])
+        self.logger.debug("Logged in")
         if not int(self.monitor['initiated']):
             self.addPrefs()
         T1 = Thread(target=self.updatePrice)
@@ -23,7 +33,9 @@ class Grapher(object):
         T1.deamon = True
         T2.deamon = True
         T1.start()
+        self.logger.debug("Price updater thread #1 launched")
         T2.start()
+        self.logger.debug("Candlestick updater thread #2 launched")
 
     def stop(self):
         self.terminate = True
@@ -34,6 +46,7 @@ class Grapher(object):
         self.api.addPrefs(self.prefs)
         self.config.config['MONITOR']['initiated'] = '1'
         self.config.write()
+        self.logger.debug('Preferencies added')
 
     def updatePrice(self):
         while self.terminate == False:
@@ -42,7 +55,7 @@ class Grapher(object):
 
     def candlestickUpdate(self):
         while self.terminate == False:
-            time.sleep(60)
+            self._wait(60, self.terminate == False)
             for stock in self.api.stocks:
                 if not [x for x in self.stocks if x.name == stock.name]:
                     self.stocks.append(CandlestickStock(stock.name))
@@ -53,8 +66,6 @@ class Grapher(object):
                                  prices[-1])
                 candle.sentiment = sent
                 self.api.stocks = []
-                # DEL
-                # print([x[-1] for x in candle.records][-1])
 
 
 class CandlestickStock(object):
