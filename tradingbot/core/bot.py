@@ -1,9 +1,9 @@
 from tradingAPI import API
 from getpass import getpass
-
 from .color import *
 from .config import Configurer
 from .algorithm import *
+
 
 class Bot(object):
     def __init__(self):
@@ -26,7 +26,8 @@ class Bot(object):
             print(bold(blue("--------------------")))
             username2 = input(info.user_input("Username: "))
             password2 = getpass(info.user_input("Password: "))
-            stocks = input(info.user_input("Favourite stocks (sep by spaces): ")).split(' ')
+            stocks = input(info.user_input(
+                "Favourite stocks (sep by spaces): ")).split(' ')
             self.config.addLogin(username, password)
             self.config.addMonitor(username2, password2, stocks)
         else:
