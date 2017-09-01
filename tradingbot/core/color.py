@@ -14,20 +14,36 @@ UNDERLINE = '\033[04m'
 # COLOR FUNCTIONS
 def bold(string):
     return BOLD + str(string) + WHITE
+
+
 def underline(string):
     return UNDERLINE + str(string) + WHITE
+
+
 def cyan(string):
     return CYAN + str(string) + WHITE
+
+
 def purple(string):
     return PURPLE + str(string) + WHITE
+
+
 def blue(string):
     return BLUE + str(string) + WHITE
+
+
 def green(string):
     return GREEN + str(string) + WHITE
+
+
 def red(string):
     return RED + str(string) + WHITE
+
+
 def yellow(string):
     return YELLOW + str(string) + WHITE
+
+
 def white(string):
     return WHITE + str(string) + WHITE
 

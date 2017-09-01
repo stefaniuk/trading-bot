@@ -2,9 +2,7 @@ import time
 from threading import Thread
 import tradingAPI.exceptions
 from tradingAPI import API
-
 from .color import *
-
 
 
 class Grapher(object):
@@ -27,7 +25,7 @@ class Grapher(object):
 
     def _closeTo(self, val1, val2, swap=0.05):
         swap2 = val2 * swap
-        if val2 - swap2  < val1 and val1 < val2 + swap2:
+        if val2 - swap2 < val1 and val1 < val2 + swap2:
             return 1
         else:
             return 0
@@ -61,13 +59,13 @@ class Grapher(object):
         self.logger.debug('Preferencies added')
 
     def updatePrice(self):
-        while self.terminate == False:
+        while self.terminate is False:
             self.api.checkStocks(self.prefs)
             time.sleep(1)
 
     def candlestickUpdate(self):
-        while self.terminate == False:
-            self._wait(60, self.terminate == False)
+        while self.terminate is False:
+            self._wait(60, self.terminate is False)
             for stock in self.api.stocks:
                 if not [x for x in self.stocks if x.name == stock.name]:
                     self.stocks.append(CandlestickStock(stock.name))
