@@ -10,6 +10,7 @@ A trade bot for investing in trading212.com broker service.
 Just install it with pip.
 
 ```shell
+sudo apt-get install xvfb
 pip install tradingbot
 ```
 ### MacOS
