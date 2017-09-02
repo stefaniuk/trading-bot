@@ -5,11 +5,26 @@ A trade bot for investing in trading212.com broker service.
 
 ## Getting started
 
+### General
+
 Just install it with pip.
 
 ```shell
-sudo apt-get install xvfb
 pip install tradingbot
+```
+### MacOS
+
+Install [XQuartz](https://www.xquartz.org).
+
+```shell
+brew cask install xquarts
+```
+
+### Linux
+
+```shell
+sudo apt-get install xvfb
+sudo apt-get install firefox
 ```
 
 ## Developing
@@ -21,6 +36,7 @@ pip install tradingbot
 ### Prerequisites
 
 - Python3.6
+- firefox
 - xvfb
 
 ### Setting up Dev
