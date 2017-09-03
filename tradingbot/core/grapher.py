@@ -87,7 +87,7 @@ class Grapher(object):
             return 0
 
     def isClose(self, name, value):
-        price = [x.vars[0] for x in self.api.stocks][-1]
+        price = [x.vars[-1] for x in self.api.stocks if x.name == name][0]
         swap = float(self.config.config['STRATEGIES']['swap'])
         self._closeTo(price, value, swap)
 
