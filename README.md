@@ -38,6 +38,7 @@ sudo apt-get install firefox
 
 - Python3.6
 - firefox
+- geckodriver
 - xvfb
 
 ### Setting up Dev
@@ -51,7 +52,16 @@ sudo apt-get install xvfb
 cd TradingBot/
 python3.6 -m venv env
 . env/bin/activate
-pip setup.py install
+pip install .
+```
+
+#### Docker
+
+Build a container and run it.
+
+```shell
+docker build -t tradingbot .
+docker run --name tradingbot_instance -it tradingbot
 ```
 
 ## Versioning
