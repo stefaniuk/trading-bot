@@ -68,16 +68,19 @@ class Grapher(object):
         while self.terminate is False:
             tm = self._waitTerminate(60)
             if tm != 0:
+                count = 0
                 for stock in self.api.stocks:
-                    if not [x for x in self.stocks if x.name == stock.name]:
-                        self.stocks.append(CandlestickStock(stock.name))
-                    candle = [x for x in self.stocks if x.name == stock.name][0]
-                    prices = [var[0] for var in stock.vars]
-                    sent = [var[1] for var in stock.vars][-1]
-                    candle.addRecord(max(prices), min(prices), prices[0],
-                                     prices[-1])
-                    candle.sentiment = sent
-                self.logger.debug("updated candlestick")
+                    if stock.market:
+                        if not [x for x in self.stocks if x.name == stock.name]:
+                            self.stocks.append(CandlestickStock(stock.name))
+                        candle = [x for x in self.stocks if x.name == stock.name][0]
+                        prices = [var[0] for var in stock.vars]
+                        sent = [var[1] for var in stock.vars][-1]
+                        candle.addRecord(max(prices), min(prices), prices[0],
+                                         prices[-1])
+                        candle.sentiment = sent
+                        count += 1
+                self.logger.debug("updated {} candlestick".format(count))
 
     def isDoji(self, name):
         stock = [x for x in self.stocks if x.name == name][0]
