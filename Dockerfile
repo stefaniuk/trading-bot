@@ -30,6 +30,6 @@ RUN git checkout factory
 RUN python3.6 -m venv env
 RUN . env/bin/activate
 RUN pip install wheel
-RUN pip install dev-requirements.txt
+RUN pip install -r dev-requirements.txt
 RUN pip install .
 ###############
