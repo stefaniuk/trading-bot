@@ -41,8 +41,8 @@ class Pivot(object):
                     self.logger.info(
                         "It worth to {mode} {product} on {price}"
                         .format(mode=bold(green("buy")),
-                                price=bold(support)),
-                                product=bold(name))
+                                price=bold(support),
+                                product=bold(name)))
 
     def start(self):
         self.graph.start()
