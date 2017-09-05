@@ -55,8 +55,6 @@ class Pivot(object):
     def stop(self):
         self.graph.stop()
 
-    def stop(self):
-        self.graph.stop()
 
 class predictStock(object):
     def __init__(self, name):
