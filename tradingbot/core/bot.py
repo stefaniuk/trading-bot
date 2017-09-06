@@ -1,5 +1,4 @@
 import os.path
-from tradingAPI import API
 from getpass import getpass
 from optparse import OptionParser
 from .color import *
@@ -12,12 +11,14 @@ class Bot(object):
     def __init__(self):
         path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data.yml")
         self.configurer = Configurer(path)
+        self.getArgvs()
+        logger.setlevel(self.options.verbosity)
 
     def getArgvs(self):
         parser = OptionParser()
         parser.add_option("-v", "--verbosity",
                           dest="verbosity",
-                          default='DEBUG',
+                          default='info',
                           help="Set the level of verbosity.",
                           action="store",
                           type="string")
@@ -53,10 +54,9 @@ class Bot(object):
 
     def start(self):
         self.conf()
-        self.getArgvs()
-        self.logger = logger(self.options.verbosity, self.options.verbosity)
-        self.api = API(self.logger.level_API)
-        self.pivot = Pivot(self.api, self.configurer, self.logger)
+        self.configurer.config['logger_level'] = self.options.verbosity
+        self.configurer.save()
+        self.pivot = Pivot(self.configurer)
         self.pivot.start()
 
     def stop(self):

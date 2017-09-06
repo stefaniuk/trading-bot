@@ -3,15 +3,15 @@ from threading import Thread
 import tradingAPI.exceptions
 from tradingAPI import API
 from .color import *
+from .logger import *
 
 
 class Grapher(object):
-    def __init__(self, conf, logger):
-        self.logger = logger
-        self.logger.debug("Grapher initialized")
-        self.api = API(self.logger.level_API)
+    def __init__(self, conf):
+        logger.debug("Grapher initialized")
         self.config = conf
         self.monitor = conf.config['monitor']
+        self.api = API(self.config.config['logger_level'])
         self.prefs = self.monitor['stocks']
         self.stocks = []
         self.terminate = False
@@ -40,16 +40,16 @@ class Grapher(object):
         T1.deamon = True
         T2.deamon = True
         T1.start()
-        self.logger.debug("Price updater thread #1 launched")
+        logger.debug("Price updater thread #1 launched")
         T2.start()
-        self.logger.debug("Candlestick updater thread #2 launched")
+        logger.debug("Candlestick updater thread #2 launched")
 
     def stop(self):
         self.terminate = True
         try:
             self.api.logout()
         except tradingAPI.exceptions.BrowserException as e:
-            self.logger.warning("Warning: {err}".format(err=e))
+            logger.warning("Warning: {err}".format(err=e))
 
     def addPrefs(self):
         self.api.clearPrefs()
@@ -57,7 +57,7 @@ class Grapher(object):
         self.api.addPrefs(self.prefs)
         self.config.config['initiated'] = '1'
         self.config.save()
-        self.logger.debug('Preferencies added')
+        logger.debug('Preferencies added')
 
     def updatePrice(self):
         while self.terminate is False:
@@ -80,14 +80,14 @@ class Grapher(object):
                                          prices[-1])
                         candle.sentiment = sent
                         count += 1
-                self.logger.debug("updated {} candlestick".format(count))
+                logger.debug("updated {} candlestick".format(count))
 
     def isDoji(self, name):
         stock = [x for x in self.stocks if x.name == name][0]
         op = stock.records[-1][0]
         cl = stock.records[-1][-1]
         if op == cl:
-            self.logger.debug("doji on {product}".format(product=bold(name)))
+            logger.debug("doji on {product}".format(product=bold(name)))
             return 1
         else:
             return 0
@@ -96,7 +96,7 @@ class Grapher(object):
         price = float([x.vars[-1] for x in self.api.stocks if x.name == name][0][0])
         swap = float(self.config.config['strategy']['swap'])
         if self._closeTo(price, value, swap):
-            self.logger.debug("{} is close to {}".format(price, value))
+            logger.debug("{} is close to {}".format(price, value))
             return 1
 
 
