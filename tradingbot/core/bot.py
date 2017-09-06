@@ -1,15 +1,17 @@
+import os.path
 from tradingAPI import API
 from getpass import getpass
 from optparse import OptionParser
 from .color import *
 from .logger import *
-from .config import Configurer
+from ..configurer import Configurer
 from .algorithm import *
 
 
 class Bot(object):
     def __init__(self):
-        self.config = Configurer("data.ini")
+        path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data.yml")
+        self.configurer = Configurer(path)
 
     def getArgvs(self):
         parser = OptionParser()
@@ -23,9 +25,9 @@ class Bot(object):
         self.options = options
 
     def conf(self):
-        if not self.config.checkFile():
-            self.config.config['STRATEGIES'] = {'swap': 0.05}
-            self.config.write()
+        if self.configurer.checkFile():
+            self.configurer.read()
+        else:
             print(printer.header("config"))
             print("Add your credentials")
             print("for Trading212")
@@ -41,17 +43,20 @@ class Bot(object):
             password2 = getpass(printer.user_input("Password: "))
             stocks = input(printer.user_input(
                 "Favourite stocks (sep by spaces): ")).split(' ')
-            self.config.addLogin(username, password)
-            self.config.addMonitor(username2, password2, stocks)
-        else:
-            self.config.read()
+            general = {'username': username, 'password':password}
+            monitor = {'username': username2, 'password':password2,
+                       'stocks': stocks, 'initiated': 0}
+            self.configurer.config['strategy'] = {'swap': 0.05}
+            self.configurer.config['general'] = general
+            self.configurer.config['monitor'] = monitor
+            self.configurer.save()
 
     def start(self):
         self.conf()
         self.getArgvs()
         self.logger = logger(self.options.verbosity, self.options.verbosity)
         self.api = API(self.logger.level_API)
-        self.pivot = Pivot(self.api, self.config, self.logger)
+        self.pivot = Pivot(self.api, self.configurer, self.logger)
         self.pivot.start()
 
     def stop(self):

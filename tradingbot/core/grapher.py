@@ -11,8 +11,8 @@ class Grapher(object):
         self.logger.debug("Grapher initialized")
         self.api = API(self.logger.level_API)
         self.config = conf
-        self.monitor = conf.config['MONITOR']
-        self.prefs = eval(self.monitor['stocks'])
+        self.monitor = conf.config['monitor']
+        self.prefs = self.monitor['stocks']
         self.stocks = []
         self.terminate = False
 
@@ -55,8 +55,8 @@ class Grapher(object):
         self.api.clearPrefs()
         time.sleep(2)
         self.api.addPrefs(self.prefs)
-        self.config.config['MONITOR']['initiated'] = '1'
-        self.config.write()
+        self.monitor['initiated'] = '1'
+        self.config.save()
         self.logger.debug('Preferencies added')
 
     def updatePrice(self):
@@ -94,7 +94,7 @@ class Grapher(object):
 
     def isClose(self, name, value):
         price = float([x.vars[-1] for x in self.api.stocks if x.name == name][0][0])
-        swap = float(self.config.config['STRATEGIES']['swap'])
+        swap = float(self.config.config['strategy']['swap'])
         if self._closeTo(price, value, swap):
             self.logger.debug("{} is close to {}".format(price, value))
             return 1
