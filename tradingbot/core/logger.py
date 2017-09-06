@@ -13,7 +13,7 @@ class logger(object):
     logging.getLogger().setLevel(getattr(logging, 'DEBUG'))
 
     def setlevel(level):
-        logging.getLogger().setLevel(getattr(logging, level.upper()))        
+        logging.getLogger().setLevel(getattr(logging, level.upper())) 
 
     def debug(s):
         logging.debug(

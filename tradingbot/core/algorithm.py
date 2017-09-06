@@ -28,22 +28,17 @@ class Pivot(object):
             predict_stock.rl.append((predict_stock.pp * 2) - low)
             predict_stock.rl.append(predict_stock.pp + (high - low))
             logger.info(bold(predict_stock.name) + ': ' +
-                             str([round(predict_stock.pp, 3),
-                                  round(predict_stock.sl[0], 3),
-                                  round(predict_stock.rl[0], 3)]))
+                        str([round(predict_stock.pp, 3),
+                             round(predict_stock.sl[0], 3),
+                             round(predict_stock.rl[0], 3)]))
 
     def isWorth(self, name):
         stock = [x.sl for x in self.predict_stocks if x.name == name][0]
         if self.graph.isDoji(name):
             for support in stock:
                 if self.graph.isClose(name, support):
-<<<<<<< HEAD
                     self.logger.info(
                         "It's worth to {mode} {product} on {price}"
-=======
-                    logger.info(
-                        "It worth to {mode} {product} on {price}"
->>>>>>> ca1262a1e54b8ffe7a26f917818617247b219570
                         .format(mode=bold(green("buy")),
                                 price=bold(support),
                                 product=bold(name)))

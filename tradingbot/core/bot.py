@@ -9,7 +9,8 @@ from .algorithm import *
 
 class Bot(object):
     def __init__(self):
-        path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data.yml")
+        path = os.path.join(os.path.dirname(os.path.dirname(__file__)),
+                            "data.yml")
         self.configurer = Configurer(path)
         self.getArgvs()
         logger.setlevel(self.options.verbosity)
@@ -44,8 +45,8 @@ class Bot(object):
             password2 = getpass(printer.user_input("Password: "))
             stocks = input(printer.user_input(
                 "Favourite stocks (sep by spaces): ")).split(' ')
-            general = {'username': username, 'password':password}
-            monitor = {'username': username2, 'password':password2,
+            general = {'username': username, 'password': password}
+            monitor = {'username': username2, 'password': password2,
                        'stocks': stocks, 'initiated': 0}
             self.configurer.config['strategy'] = {'swap': 0.05}
             self.configurer.config['general'] = general
