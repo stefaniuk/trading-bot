@@ -55,7 +55,7 @@ class Grapher(object):
         self.api.clearPrefs()
         time.sleep(2)
         self.api.addPrefs(self.prefs)
-        self.monitor['initiated'] = '1'
+        self.config.config['initiated'] = '1'
         self.config.save()
         self.logger.debug('Preferencies added')
 
