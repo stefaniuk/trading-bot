@@ -5,7 +5,8 @@ setup(
     version="1.0a1",
     packages=['tradingbot', 'tradingbot.core'],
     install_requires=[
-        'trading212api'
+        'trading212api',
+        'pyyaml'
     ],
     include_package_data=True,
     package_data={'': ['*.conf']},

@@ -1,15 +1,14 @@
 import time
 from .color import *
+from .logger import *
 from .grapher import Grapher
 
 
 class Pivot(object):
-    def __init__(self, api, conf, logger):
-        self.logger = logger
-        self.logger.debug("Pivot algortihm initialized")
-        self.api = api
+    def __init__(self, conf):
+        logger.debug("Pivot algortihm initialized")
         self.conf = conf
-        self.graph = Grapher(self.conf, self.logger)
+        self.graph = Grapher(self.conf)
         self.predict_stocks = []
 
     def getPivotPoints(self):
@@ -28,7 +27,7 @@ class Pivot(object):
             predict_stock.rl = []
             predict_stock.rl.append((predict_stock.pp * 2) - low)
             predict_stock.rl.append(predict_stock.pp + (high - low))
-            self.logger.info(bold(predict_stock.name) + ': ' +
+            logger.info(bold(predict_stock.name) + ': ' +
                              str([round(predict_stock.pp, 3),
                                   round(predict_stock.sl[0], 3),
                                   round(predict_stock.rl[0], 3)]))
@@ -38,8 +37,13 @@ class Pivot(object):
         if self.graph.isDoji(name):
             for support in stock:
                 if self.graph.isClose(name, support):
+<<<<<<< HEAD
                     self.logger.info(
                         "It's worth to {mode} {product} on {price}"
+=======
+                    logger.info(
+                        "It worth to {mode} {product} on {price}"
+>>>>>>> ca1262a1e54b8ffe7a26f917818617247b219570
                         .format(mode=bold(green("buy")),
                                 price=bold(support),
                                 product=bold(name)))
