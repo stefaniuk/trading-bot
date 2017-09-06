@@ -39,7 +39,7 @@ class Pivot(object):
             for support in stock:
                 if self.graph.isClose(name, support):
                     self.logger.info(
-                        "It worth to {mode} {product} on {price}"
+                        "It's worth to {mode} {product} on {price}"
                         .format(mode=bold(green("buy")),
                                 price=bold(support),
                                 product=bold(name)))
