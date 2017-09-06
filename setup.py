@@ -6,7 +6,6 @@ setup(
     packages=['tradingbot', 'tradingbot.core'],
     install_requires=[
         'trading212api',
-        'redis',
         'pyyaml'
     ],
     include_package_data=True,
