@@ -49,7 +49,7 @@ class Grapher(object):
         try:
             self.api.logout()
         except tradingAPI.exceptions.BrowserException as e:
-            logger.warning("Warning: {err}".format(err=e))
+            logger.warning(f"Warning: {e}")
 
     def addPrefs(self):
         self.api.clearPrefs()
@@ -80,14 +80,14 @@ class Grapher(object):
                                          prices[-1])
                         candle.sentiment = sent
                         count += 1
-                logger.debug("updated {} candlestick".format(count))
+                logger.debug(f"updated {count} candlestick")
 
     def isDoji(self, name):
         stock = [x for x in self.stocks if x.name == name][0]
         op = stock.records[-1][0]
         cl = stock.records[-1][-1]
         if op == cl:
-            logger.debug("doji on {product}".format(product=bold(name)))
+            logger.debug("doji on {bold(name)}")
             return 1
         else:
             return 0
@@ -96,7 +96,7 @@ class Grapher(object):
         price = float([x.vars[-1] for x in self.api.stocks if x.name == name][0][0])
         swap = float(self.config.config['strategy']['swap'])
         if self._closeTo(price, value, swap):
-            logger.debug("{} is close to {}".format(price, value))
+            logger.debug("{price} is close to {value}")
             return 1
 
 

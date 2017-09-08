@@ -37,11 +37,8 @@ class Pivot(object):
         if self.graph.isDoji(name):
             for support in stock:
                 if self.graph.isClose(name, support):
-                    self.logger.info(
-                        "It's worth to {mode} {product} on {price}"
-                        .format(mode=bold(green("buy")),
-                                price=bold(support),
-                                product=bold(name)))
+                    self.logger.info(f"It's worth to {bold(green(buy))} " +
+                        "{bold(name)} on {bold(support)}")
 
     def start(self):
         self.graph.start()
