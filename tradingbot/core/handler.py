@@ -40,8 +40,8 @@ class Handler(object):
         stock = [x for x in self.analysis if x.name == prod][0]
         records = [x.records for x in self.graph.stocks
                    if x.name == prod][0][:self.strategy['max_records']]
-        mx = max([x[1] for x in records])
-        mn = min([x[2] for x in records])
+        mx = max([float(x[1]) for x in records])
+        mn = min([float(x[2]) for x in records])
         stock.volatility = mx - mn
         logger.debug(f"volatility: {stock.volatility}")
         margin = 100 / self.strategy['max_trans'] / 100 * \
