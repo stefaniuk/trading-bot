@@ -18,6 +18,7 @@ class BaseAlgorithm(object):
 
     def stop(self):
         self.graph.stop()
+        self.handler.stop()
 
 
 class Pivot(BaseAlgorithm):
@@ -62,16 +63,19 @@ class Pivot(BaseAlgorithm):
         logger.debug(f"sentiment: {bold(stock.candlestick.sentiment)}")
         logger.info(f"It's worth to {bold(green('buy'))} " +
                     f"{bold(name)} on {bold(blue(stock.prediction))}")
+        return stock.prediction
 
     def run(self):
         while self.graph.live.wait(10):
             self.getPivotPoints()
             for x in self.stocks:
-                self.isWorth(x.name)
+                if self.isWorth(x.name) >= self.strategy['prediction']:
+                    self.handler.addMov(x.name)
             self.graph._waitTerminate(60)
 
     def start(self):
         self.graph.start()
+        self.handler.start()
         T3 = Thread(target=self.run)
         T3.deamon = True
         time.sleep(65)
