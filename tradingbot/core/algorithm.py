@@ -25,7 +25,7 @@ class Pivot(BaseAlgorithm):
     def __init__(self, conf):
         strat_conf = Configurer(os.path.join(
             os.path.dirname(__file__), 'strategies',
-            self.conf.config['strategy']['strategy'] + '.yml'))
+            conf.config['strategy']['strategy'] + '.yml'))
         strat_conf.read()
         self.strategy = strat_conf.config
         super().__init__(conf, self.strategy)
