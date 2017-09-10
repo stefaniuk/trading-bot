@@ -74,8 +74,8 @@ class Pivot(BaseAlgorithm):
             self.graph._waitTerminate(60)
 
     def start(self):
-        self.graph.start()
-        self.handler.start()
+        Thread(target=self.graph.start()).start()
+        Thread(target=self.handler.start()).start()
         T3 = Thread(target=self.run)
         T3.deamon = True
         time.sleep(65)
