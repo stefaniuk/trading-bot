@@ -25,7 +25,7 @@ class Handler(object):
         self.api.launch()
         creds = self.config.config['general']
         if self.api.login(creds['username'], creds['password']):
-            logger.info(f"handler logged in as {bold(creds['username']})")
+            logger.info(f"handler logged in as {bold(creds['username'])}")
 
     def stop(self):
         self.api.logout()
