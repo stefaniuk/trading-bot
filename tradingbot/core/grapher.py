@@ -68,7 +68,7 @@ class Grapher(object):
     def candlestickUpdate(self):
         while self.live.wait(10):
             tm = self._waitTerminate(60)
-            if tm != 0:
+            if tm is not False:
                 count = 0
                 for stock in self.api.stocks:
                     if stock.market:

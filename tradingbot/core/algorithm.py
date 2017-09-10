@@ -6,12 +6,14 @@ from .logger import *
 from ..configurer import Configurer
 from .stocks import PredictStock
 from .grapher import Grapher
+from .handler import Handler
 
 
 class BaseAlgorithm(object):
-    def __init__(self, conf):
+    def __init__(self, conf, strat):
         self.conf = conf
         self.graph = Grapher(self.conf)
+        self.handler = Handler(self.conf, strat, self.graph)
         self.stocks = []
 
     def stop(self):
@@ -20,14 +22,14 @@ class BaseAlgorithm(object):
 
 class Pivot(BaseAlgorithm):
     def __init__(self, conf):
-        super().__init__(conf)
         strat_conf = Configurer(os.path.join(
             os.path.dirname(__file__), 'strategies',
             self.conf.config['strategy']['strategy'] + '.yml'))
         strat_conf.read()
         self.strategy = strat_conf.config
+        super().__init__(conf, self.strategy)
         logger.debug("Pivot algortihm initialized")
-    
+
     def getPivotPoints(self):
         for stock in self.graph.stocks:
             high = max([float(x[1]) for x in stock.records])
@@ -59,7 +61,7 @@ class Pivot(BaseAlgorithm):
         stock.multiply(stock.candlestick.sentiment*s['sentiment_mult'])
         logger.debug(f"sentiment: {bold(stock.candlestick.sentiment)}")
         logger.info(f"It's worth to {bold(green('buy'))} " +
-            f"{bold(name)} on {bold(blue(stock.prediction))}")
+                    f"{bold(name)} on {bold(blue(stock.prediction))}")
 
     def run(self):
         while self.graph.live.wait(10):

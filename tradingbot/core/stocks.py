@@ -26,3 +26,9 @@ class PredictStock(BaseStock):
         self.prediction *= val
         if self.prediction > 1:
             self.prediction = 1
+
+
+class StockAnalysis(object):
+    def __init__(self, name):
+        self.name = name
+        self.volatility = None
