@@ -27,8 +27,6 @@ WORKDIR /home
 RUN git clone https://github.com/federico123579/trading-bot.git trading-bot
 WORKDIR /home/trading-bot
 RUN git checkout factory
-RUN python3.6 -m venv env
-RUN . env/bin/activate
 RUN pip install wheel
 RUN pip install -r dev-requirements.txt
 RUN pip install .
