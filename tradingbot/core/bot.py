@@ -51,7 +51,7 @@ class Bot(object):
             monitor = {'username': username2, 'password': password2,
                        'stocks': stocks, 'initiated': 0}
             self.configurer.config['strategy'] = {
-                'swap': 0.05, 'strategy': strategy}
+                'strategy': strategy}
             self.configurer.config['general'] = general
             self.configurer.config['monitor'] = monitor
             self.configurer.save()

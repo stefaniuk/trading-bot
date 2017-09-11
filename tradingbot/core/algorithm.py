@@ -12,7 +12,7 @@ from .handler import Handler
 class BaseAlgorithm(object):
     def __init__(self, conf, strat):
         self.conf = conf
-        self.graph = Grapher(self.conf)
+        self.graph = Grapher(self.conf, strat)
         self.handler = Handler(self.conf, strat, self.graph)
         self.stocks = []
 
@@ -36,6 +36,7 @@ class Pivot(BaseAlgorithm):
             high = max([float(x[1]) for x in stock.records])
             low = min([float(x[2]) for x in stock.records])
             close = [float(x[3]) for x in stock.records][-1]
+            logger.debug(f"price: {close}")
             if stock not in [x.candlestick for x in self.stocks]:
                 self.stocks.append(PredictStock(stock))
             p_stock = [x for x in self.stocks if x.candlestick == stock][0]
@@ -55,10 +56,11 @@ class Pivot(BaseAlgorithm):
             if stock.candlestick.sentiment >= val[0]:
                 stock.add(val[1])
         for support in stock.sl:
+            logger.debug(f"support: {support}")
             if self.graph.isClose(name, support):
                 stock.add(s['support'])
-        if self.graph.isDoji(name):
-            stock.add(s['doji'])
+                if self.graph.isDoji(name):
+                    stock.add(s['doji'])
         stock.multiply(stock.candlestick.sentiment*s['sentiment_mult'])
         logger.debug(f"sentiment: {bold(stock.candlestick.sentiment)}")
         logger.info(f"It's worth to {bold(green('buy'))} " +
@@ -66,18 +68,23 @@ class Pivot(BaseAlgorithm):
         return stock.prediction
 
     def run(self):
-        while self.graph.live.wait(10):
+        while self.graph.live.wait(5):
             self.getPivotPoints()
             for x in self.stocks:
-                if self.isWorth(x.name) >= self.strategy['prediction']:
-                    self.handler.addMov(x.name)
+                pred = self.isWorth(x.name)
+                if pred >= self.strategy['prediction']:
+                    self.handler.addMov(x.name, pred)
             self.graph._waitTerminate(60)
 
     def start(self):
-        Thread(target=self.graph.start()).start()
-        Thread(target=self.handler.start()).start()
-        T3 = Thread(target=self.run)
-        T3.deamon = True
-        time.sleep(65)
+        T3 = Thread(target=self.graph.start)
+        T4 = Thread(target=self.handler.start)
+        T5 = Thread(target=self.run)
+        T5.deamon = True
         T3.start()
-        logger.debug("Pivoting thread #3 launched")
+        T4.start()
+        T3.join()
+        T4.join()
+        time.sleep(120)
+        T5.start()
+        logger.debug("Pivoting thread #5 launched")

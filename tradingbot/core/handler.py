@@ -16,7 +16,7 @@ class Handler(object):
         logger.debug("Handler initialized")
 
     def _get_limit(self, margin, volatility):
-        mult = self.strategy['stop-limit']
+        mult = self.strategy['stop_limit']
         res = (margin * (volatility / 10)) * mult
         return res
 
@@ -24,12 +24,14 @@ class Handler(object):
         logger.debug("starting handler")
         self.api.launch()
         creds = self.config.config['general']
-        self.api.login(creds['username'], creds['password'])
+        if not self.api.login(creds['username'], creds['password']):
+            logger.critical("hanlder failed to start")
+            self.stop()
 
     def stop(self):
         self.api.logout()
 
-    def addMov(self, prod):
+    def addMov(self, prod, pred=0.8):
         price = [x.vars[-1][0] for x in self.graphapi.stocks
                  if x.name == prod][0]
         logger.debug(f"price: {price}")
@@ -40,16 +42,17 @@ class Handler(object):
                    if x.name == prod][0][-self.strategy['max_records']:]
         mx = max([float(x[1]) for x in records])
         mn = min([float(x[2]) for x in records])
+        logger.debug(f"max: {mx}\nmin: {mn}")
         stock.volatility = mx - mn
         logger.debug(f"volatility: {stock.volatility}")
         margin = 100 / self.strategy['max_trans'] / 100 * \
+            ((pred + 0.2 - 100) * self.strategy['pred_mult'] + 100) * \
             (self.api.get_bottom_info('free_funds') *
              self.strategy['max_margin_risk'])
         logger.debug(f"margin: {margin}")
         limit = self._get_limit(margin, stock.volatility)
         logger.debug(f"limit: {limit}")
-        stop_limit = {'gain': ['value', limit],
-                      'loss': ['value', limit]}
+        stop_limit = {'mode': 'value', 'value': limit}
         free_funds = self.api.get_bottom_info('free_funds')
         logger.debug(f"free funds: {free_funds}")
         if self.api.addMov(prod, stop_limit=stop_limit, auto_quantity=margin):
