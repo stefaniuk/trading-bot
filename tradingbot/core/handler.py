@@ -24,12 +24,10 @@ class Handler(object):
         logger.debug("starting handler")
         self.api.launch()
         creds = self.config.config['general']
-        if self.api.login(creds['username'], creds['password']):
-            logger.info(f"handler logged in as {bold(creds['username'])}")
+        self.api.login(creds['username'], creds['password'])
 
     def stop(self):
         self.api.logout()
-        logger.debug("handler logged out")
 
     def addMov(self, prod):
         price = [x.vars[-1][0] for x in self.graphapi.stocks
@@ -39,7 +37,7 @@ class Handler(object):
             self.analysis.append(StockAnalysis(prod))
         stock = [x for x in self.analysis if x.name == prod][0]
         records = [x.records for x in self.graph.stocks
-                   if x.name == prod][0][:self.strategy['max_records']]
+                   if x.name == prod][0][-self.strategy['max_records']:]
         mx = max([float(x[1]) for x in records])
         mn = min([float(x[2]) for x in records])
         stock.volatility = mx - mn
