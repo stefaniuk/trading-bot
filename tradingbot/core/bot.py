@@ -1,5 +1,6 @@
 import os.path
 import time
+import sys
 from getpass import getpass
 from optparse import OptionParser
 from .color import *
@@ -24,39 +25,55 @@ class Bot(object):
                           help="Set the level of verbosity.",
                           action="store",
                           type="string")
+        parser.add_option("--conf",
+                          dest="conf",
+                          default=False,
+                          help="Config only.",
+                          action="store_true")
         (options, args) = parser.parse_args()
         self.options = options
+
+    def __start_conf(self):
+        print(printer.header("config"))
+        print("Add your credentials")
+        print("for Trading212")
+        print(bold(blue("--------------------")))
+        username = input(printer.user_input("Username: "))
+        password = getpass(printer.user_input("Password: "))
+        print(bold(blue("--------------------")))
+        print("Add your information")
+        print("for a monitoring")
+        print("account")
+        print(bold(blue("--------------------")))
+        username2 = input(printer.user_input("Username: "))
+        password2 = getpass(printer.user_input("Password: "))
+        stocks = input(printer.user_input(
+            "Favourite stocks (sep by spaces): ")).split(' ')
+        strategy = input(printer.user_input("Strategy: "))
+        general = {'username': username, 'password': password}
+        monitor = {'username': username2, 'password': password2,
+                   'stocks': stocks, 'initiated': 0}
+        self.configurer.config['strategy'] = {
+            'strategy': strategy}
+        self.configurer.config['general'] = general
+        self.configurer.config['monitor'] = monitor
+        self.configurer.save()
 
     def conf(self):
         if self.configurer.checkFile():
             self.configurer.read()
         else:
-            print(printer.header("config"))
-            print("Add your credentials")
-            print("for Trading212")
-            print(bold(blue("--------------------")))
-            username = input(printer.user_input("Username: "))
-            password = getpass(printer.user_input("Password: "))
-            print(bold(blue("--------------------")))
-            print("Add your information")
-            print("for a monitoring")
-            print("account")
-            print(bold(blue("--------------------")))
-            username2 = input(printer.user_input("Username: "))
-            password2 = getpass(printer.user_input("Password: "))
-            stocks = input(printer.user_input(
-                "Favourite stocks (sep by spaces): ")).split(' ')
-            strategy = input(printer.user_input("Strategy: "))
-            general = {'username': username, 'password': password}
-            monitor = {'username': username2, 'password': password2,
-                       'stocks': stocks, 'initiated': 0}
-            self.configurer.config['strategy'] = {
-                'strategy': strategy}
-            self.configurer.config['general'] = general
-            self.configurer.config['monitor'] = monitor
-            self.configurer.save()
+            self.__start_conf()
 
     def start(self):
+        if self.options.conf:
+            try:
+                self.__start_conf()
+                logger.info("config saved")
+            except Exception as e:
+                logger.error(e)
+            finally:
+                sys.exit()
         self.conf()
         self.configurer.config['logger_level'] = self.options.verbosity
         self.configurer.save()
@@ -68,13 +85,13 @@ class Bot(object):
 
 
 def main():
-    import sys
-
     bot = Bot()
     try:
         bot.start()
         while True:
             time.sleep(1)
+    except Exception as e:
+        logger.error(e)
     except KeyboardInterrupt as e:
         sys.stderr.write('\r' + printer.info(red("exiting...\n")))
         bot.stop()

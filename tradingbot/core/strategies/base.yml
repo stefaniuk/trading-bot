@@ -8,7 +8,7 @@ doji: 0.4
 sentiment_mult: 1.5
 pred_mult: 1
 prediction: 0.8
-swap: 0.05
+swap: 0.1
 
 # Strategy
 max_trans: 15

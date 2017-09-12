@@ -1,7 +1,10 @@
-FROM ubuntu:17.10
+FROM phusion/baseimage:0.9.22
 MAINTAINER Federico Lolli
+# INIT
+CMD ["/sbin/my_init"]
 RUN apt-get -qq update
 RUN apt-get -y install wget
+RUN apt-get -y install vim nano
 ################## BEGIN INSTALLATION ######################
 RUN apt-get -y install xvfb
 RUN apt-get -y install firefox
@@ -24,10 +27,15 @@ RUN rm geckodriver*
 ###############
 # TRADING-BOT #
 WORKDIR /home
+RUN git clone https://github.com/federico123579/Trading212-API.git trading-api
 RUN git clone https://github.com/federico123579/trading-bot.git trading-bot
+WORKDIR /home/trading-api
+RUN git checkout factory
+RUN pip install .
 WORKDIR /home/trading-bot
 RUN git checkout factory
 RUN pip install wheel
 RUN pip install -r dev-requirements.txt
 RUN pip install .
+WORKDIR /home
 ###############
