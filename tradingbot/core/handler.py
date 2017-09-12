@@ -31,7 +31,7 @@ class Handler(object):
     def stop(self):
         self.api.logout()
 
-    def addMov(self, prod, pred=self.strategy['prediction']):
+    def addMov(self, prod, pred):
         price = [x.vars[-1][0] for x in self.graphapi.stocks
                  if x.name == prod][0]
         logger.debug(f"price: {price}")
