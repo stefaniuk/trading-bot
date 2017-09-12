@@ -1,5 +1,4 @@
 import os.path
-import codecs
 import yaml
 
 
@@ -9,13 +8,13 @@ class Configurer(object):
         self.config = {}
 
     def read(self):
-        with codecs.open(self.config_file, 'r', encoding='utf-8') as f:
+        with open(self.config_file, 'r') as f:
             self.config = yaml.load(f)
 
     def save(self):
         if not self.config:
             raise Exception("nothing to save (config not exists)")
-        with codecs.open(self.config_file, 'w', encoding='utf-8') as f:
+        with open(self.config_file, 'w') as f:
             f.write(yaml.dump(self.config))
 
     def checkFile(self):
