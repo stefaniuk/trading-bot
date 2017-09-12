@@ -31,7 +31,7 @@ class Handler(object):
     def stop(self):
         self.api.logout()
 
-    def addMov(self, prod, pred=0.8):
+    def addMov(self, prod, pred=self.strategy['prediction']):
         price = [x.vars[-1][0] for x in self.graphapi.stocks
                  if x.name == prod][0]
         logger.debug(f"price: {price}")
@@ -45,8 +45,9 @@ class Handler(object):
         logger.debug(f"max: {mx}\nmin: {mn}")
         stock.volatility = mx - mn
         logger.debug(f"volatility: {stock.volatility}")
+        pred_cal = self.strategy['prediction']
         margin = 100 / self.strategy['max_trans'] / 100 * \
-            ((pred + 0.2 - 100) * self.strategy['pred_mult'] + 100) * \
+            ((pred - pred_cal) * self.strategy['pred_mult'] + 100) * \
             (self.api.get_bottom_info('free_funds') *
              self.strategy['max_margin_risk'])
         logger.debug(f"margin: {margin}")

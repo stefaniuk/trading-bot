@@ -74,6 +74,8 @@ class Pivot(BaseAlgorithm):
                 pred = self.isWorth(x.name)
                 if pred >= self.strategy['prediction']:
                     self.handler.addMov(x.name, pred)
+                if x.name == 'ripple':
+                    self.handler.addMov(x.name, pred)
             self.graph._waitTerminate(60)
 
     def start(self):
