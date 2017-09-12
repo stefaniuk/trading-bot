@@ -57,3 +57,6 @@ class Handler(object):
         logger.debug(f"free funds: {free_funds}")
         if self.api.addMov(prod, stop_limit=stop_limit, auto_quantity=margin):
             logger.info(f"Added {prod} movement of a margin of {margin}")
+
+    def closeMov(self):
+        pass
