@@ -56,8 +56,7 @@ class Handler(object):
         stop_limit = {'mode': 'value', 'value': limit}
         free_funds = self.api.get_bottom_info('free_funds')
         logger.debug(f"free funds: {free_funds}")
-        if self.api.addMov(prod, stop_limit=stop_limit, auto_quantity=margin):
-            logger.info(f"Added {prod} movement of a margin of {margin}")
+        self.api.addMov(prod, stop_limit=stop_limit, auto_quantity=margin)
 
     def closeMov(self):
         pass
