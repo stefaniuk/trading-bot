@@ -31,10 +31,12 @@ class Handler(object):
     def stop(self):
         self.api.logout()
 
+    def update(self):
+        self.api.checkPos()
+
     def addMov(self, prod, pred):
         price = [x.vars[-1][0] for x in self.graphapi.stocks
                  if x.name == prod][0]
-        logger.debug(f"price: {price}")
         if not [x for x in self.analysis if x.name == prod]:
             self.analysis.append(StockAnalysis(prod))
         stock = [x for x in self.analysis if x.name == prod][0]
@@ -42,7 +44,6 @@ class Handler(object):
                    if x.name == prod][0][-self.strategy['max_records']:]
         mx = max([float(x[1]) for x in records])
         mn = min([float(x[2]) for x in records])
-        logger.debug(f"max: {mx}\nmin: {mn}")
         stock.volatility = mx - mn
         logger.debug(f"volatility: {stock.volatility}")
         pred_cal = self.strategy['prediction']
@@ -50,13 +51,29 @@ class Handler(object):
             ((pred - pred_cal) * self.strategy['pred_mult'] + 100) * \
             (self.api.get_bottom_info('free_funds') *
              self.strategy['max_margin_risk'])
-        logger.debug(f"margin: {margin}")
         limit = self._get_limit(margin, stock.volatility)
-        logger.debug(f"limit: {limit}")
         stop_limit = {'mode': 'value', 'value': limit}
         free_funds = self.api.get_bottom_info('free_funds')
         logger.debug(f"free funds: {free_funds}")
         self.api.addMov(prod, stop_limit=stop_limit, auto_quantity=margin)
 
-    def closeMov(self):
-        pass
+    def closeMov(self, product, quantity=None, price=None):
+        self.update()
+        mvs = [x for x in self.api.movements if x.product == product]
+        if quantity is not None:
+            mvs = [x for x in movs if x.quantity == quantity]
+        if price is not None:
+            mvs = [x for x in movs if x.price == price]
+        count = 0
+        earn = 0
+        for x in mvs:
+            if self.api.closeMov(x.id):
+                count += 1
+                earn += x.earn
+        logger.info(f"closed {bold(count)} movements of {bold(product)} " +
+                    f"with a revenue of {bold(green(earn))}")
+
+    def closeAll(self):
+        self.update()
+        for mov in self.api.movements:
+            self.api.closeMov(mov.id)
