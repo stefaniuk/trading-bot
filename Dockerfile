@@ -8,13 +8,11 @@ RUN apt-get -y install vim nano unzip
 ################## BEGIN INSTALLATION ######################
 RUN apt-get -y firefox
 RUN apt-get -y install xvfb
-# GECKODRIVER #
-RUN wget https://github.com/mozilla/geckodriver/releases/download/v0.18.0/geckodriver-v0.18.0-linux64.tar.gz
-RUN tar -xvzf geckodriver-v0.18.0-linux64.tar.gz
-RUN rm geckodriver-v0.18.0-linux64.tar.gz
-RUN chmod +x geckodriver
-RUN cp geckodriver /bin/
-RUN rm geckodriver*
+#### CHROME ###
+COPY /scripts/chrome-install.sh /home/
+WORKDIR /home
+RUN bash chrome-install.sh
+RUN rm chrome-install.sh
 ###############
 ## PYTHON3.6 ##
 RUN apt-get -y install build-essential checkinstall
