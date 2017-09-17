@@ -33,7 +33,8 @@ class Grapher(object):
 
     def start(self):
         self.api.launch()
-        if not self.api.login(self.monitor['username'], self.monitor['password']):
+        if not self.api.login(self.monitor['username'],
+                              self.monitor['password']):
             logger.critical("grapher failed to start")
             self.stop()
         if not int(self.monitor['initiated']):

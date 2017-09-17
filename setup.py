@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="tradingbot",
-    version="1.0a1",
+    version="v1.0a1",
     packages=find_packages(),
     install_requires=[
         'trading212api',
@@ -20,7 +20,7 @@ setup(
     entry_points={
         'console_scripts': [
             'tradingbot = tradingbot.core.bot:main'
-        ]   
+        ]
     },
     classifiers=[
         'Development Status :: 3 - Alpha',

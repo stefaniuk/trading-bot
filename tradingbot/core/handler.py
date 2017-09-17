@@ -17,7 +17,7 @@ class Handler(object):
 
     def _get_limit(self, margin, volatility):
         mult = self.strategy['stop_limit']
-        res = (margin * (volatility / 10)) * mult
+        res = margin * volatility * mult / 10
         return res
 
     def start(self):
@@ -34,7 +34,7 @@ class Handler(object):
     def update(self):
         self.api.checkPos()
 
-    def addMov(self, prod, pred):
+    def addMov(self, prod, gain, loss, mode="buy", pred=1):
         price = [x.vars[-1][0] for x in self.graphapi.stocks
                  if x.name == prod][0]
         if not [x for x in self.analysis if x.name == prod]:
@@ -42,20 +42,16 @@ class Handler(object):
         stock = [x for x in self.analysis if x.name == prod][0]
         records = [x.records for x in self.graph.stocks
                    if x.name == prod][0][-self.strategy['max_records']:]
-        mx = max([float(x[1]) for x in records])
-        mn = min([float(x[2]) for x in records])
-        stock.volatility = mx - mn
-        logger.debug(f"volatility: {stock.volatility}")
         pred_cal = self.strategy['prediction']
-        margin = 100 / self.strategy['max_trans'] / 100 * \
-            ((pred - pred_cal) * self.strategy['pred_mult'] + 100) * \
-            (self.api.get_bottom_info('free_funds') *
-             self.strategy['max_margin_risk'])
-        limit = self._get_limit(margin, stock.volatility)
-        stop_limit = {'mode': 'value', 'value': limit}
+        margin = (self.strategy['max_trans'] *
+                  ((pred - pred_cal + 1) * self.strategy['pred_mult']) *
+                  (self.api.get_bottom_info('free_funds') *
+                   self.strategy['max_margin_risk']))
+        stop_limit = {'mode': 'unit', 'value': (gain, loss)}
         free_funds = self.api.get_bottom_info('free_funds')
         logger.debug(f"free funds: {free_funds}")
-        self.api.addMov(prod, stop_limit=stop_limit, auto_quantity=margin)
+        self.api.addMov(
+            prod, mode=mode, stop_limit=stop_limit, auto_quantity=margin)
 
     def closeMov(self, product, quantity=None, price=None):
         self.update()

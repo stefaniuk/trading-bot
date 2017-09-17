@@ -47,9 +47,13 @@ class Bot(object):
         print(bold(blue("--------------------")))
         username2 = input(printer.user_input("Username: "))
         password2 = getpass(printer.user_input("Password: "))
-        stocks = input(printer.user_input(
-            "Favourite stocks (sep by spaces): ")).split(' ')
+        prefs = input(printer.user_input(
+            "Favourite stocks (sep by spaces): "))
+        stock = []
+        if prefs:
+            stock = prefs.split(' ')
         strategy = input(printer.user_input("Strategy: "))
+        stock.extend(strategy['prefs'])
         general = {'username': username, 'password': password}
         monitor = {'username': username2, 'password': password2,
                    'stocks': stocks, 'initiated': 0}
@@ -77,11 +81,11 @@ class Bot(object):
         self.conf()
         self.configurer.config['logger_level'] = self.options.verbosity
         self.configurer.save()
-        self.pivot = Pivot(self.configurer)
-        self.pivot.start()
+        self.scalper = Scalper(self.configurer)
+        self.scalper.start(60*100)
 
     def stop(self):
-        self.pivot.stop()
+        self.scalper.stop()
 
 
 def main():

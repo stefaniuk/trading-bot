@@ -9,12 +9,72 @@ from .grapher import Grapher
 from .handler import Handler
 
 
+class Calculator(object):
+    def __init__(self, graph):
+        self.graph = graph
+        self.emas = []
+
+    def __clear(self):
+        self.emas = self.emas[:50]
+
+    def sma(self, name, periods, unit=1):
+        periods *= unit
+        records = [x.records for x in self.graph.stocks if x.name == name][0]
+        close_list = [x[-1] for x in records[-periods:]]
+        return sum(close_list) / periods
+
+    def ema(self, name, periods, unit=1):
+        records = [x.records for x in self.graph.stocks if x.name == name][0]
+        close = records[-1][-1]
+        initial_sma = self.sma(name, periods, unit)
+        multiplier = 2 / (periods + 1)
+        if len(self.emas) == 0:
+            latest_ema = close
+        else:
+            latest_ema = self.emas[-1]
+        ema = (close - latest_ema) * multiplier + latest_ema
+        self.emas.append(ema)
+        return ema
+
+    def stochastic_oscillator_5_3_3(self, name, k_fast_list, k_list):
+        records = [x.records for x in self.graph.stocks if x.name == name][-5:]
+        close = records[-1][-1]
+        highest_high = max([x[1] for x in records])
+        lowest_low = min([x[2] for x in records])
+        k_fast = (close - lowest_low) / (highest_high - lowest_low) * 100
+        k_fast_list.append(k_fast)
+        k = sum(k_fast_list[-3:])
+        k_list.append(k)
+        d = sum(k_list[-3:])
+        return d
+
+
 class BaseAlgorithm(object):
-    def __init__(self, conf, strat):
+    '''abstract class for algorithm'''
+    def __init__(self, conf):
+        # check strategy
+        strat_conf = Configurer(os.path.join(
+            os.path.dirname(__file__), 'strategies',
+            conf.config['strategy']['strategy'] + '.yml'))
+        strat_conf.read()
+        self.strategy = strat_conf.config
         self.conf = conf
-        self.graph = Grapher(self.conf, strat)
-        self.handler = Handler(self.conf, strat, self.graph)
+        self.graph = Grapher(self.conf, self.strategy)
+        self.handler = Handler(self.conf, self.strategy, self.graph)
         self.stocks = []
+
+    def start(self, sleep_time=0):
+        T3 = Thread(target=self.graph.start)
+        T4 = Thread(target=self.handler.start)
+        T5 = Thread(target=self.run)
+        T5.deamon = True
+        T3.start()
+        T4.start()
+        T3.join()
+        T4.join()
+        time.sleep(sleep_time)
+        T5.start()
+        logger.debug("Pivoting thread #5 launched")
 
     def stop(self):
         self.graph.stop()
@@ -23,12 +83,7 @@ class BaseAlgorithm(object):
 
 class Pivot(BaseAlgorithm):
     def __init__(self, conf):
-        strat_conf = Configurer(os.path.join(
-            os.path.dirname(__file__), 'strategies',
-            conf.config['strategy']['strategy'] + '.yml'))
-        strat_conf.read()
-        self.strategy = strat_conf.config
-        super().__init__(conf, self.strategy)
+        super().__init__(conf)
         logger.debug("Pivot algortihm initialized")
 
     def getPivotPoints(self):
@@ -76,15 +131,40 @@ class Pivot(BaseAlgorithm):
                     self.handler.addMov(x.name, pred)
             self.graph._waitTerminate(60)
 
-    def start(self):
-        T3 = Thread(target=self.graph.start)
-        T4 = Thread(target=self.handler.start)
-        T5 = Thread(target=self.run)
-        T5.deamon = True
-        T3.start()
-        T4.start()
-        T3.join()
-        T4.join()
-        time.sleep(120)
-        T5.start()
-        logger.debug("Pivoting thread #5 launched")
+
+class Scalper(BaseAlgorithm):
+    '''Scalper algorithm class'''
+    def __init__(self, conf):
+        super().__init__(conf)
+        self.calculator = Calculator(self.graph)
+        logger.debug("Scalper algortihm initialized")
+
+    def work(self):
+        for stock in self.graph.stocks:
+            if stock not in [x.candlestick for x in self.stocks]:
+                self.stocks.append(PredictStockScalping(stock))
+            p_stock = [x for x in self.stocks if x.candlestick == stock][0]
+            p_stock.prediction = 0
+            ema_50 = self.calculator.ema(p_stock.name, 50)
+            ema_100 = self.calculator.ema(p_stock.name, 100)
+            price = [x.vars for x in self.graph.api.stocks
+                     if x.name == stock.name][0][-1][0]
+            momentum = self.calculator.stochastic_oscillator_5_3_3(
+                p_stock.name, p_stock.k_fast_list, p_stock.k_list)
+            p_stock.momentum.append(momentum)
+            P_stock.clear()
+            if (ema_50 > ema_100 and price < ema_100 and p_stock.mom_up()):
+                p_stock.prediction = 1
+                logger.debug(f"It's profitable to buy ")
+            else:
+                p_stock.prediction = 0
+
+    def run(self):
+        while self.graph.live.wait(5):
+            old_stock_n = len(self.graph.stocks)
+            self.work()
+            for x in self.stocks:
+                if x.prediction is True:
+                    self.handler.addMov(x.name, 30, 10)
+            while len(self.graph.stocks) == len(old_stock_n):
+                time.sleep(1)

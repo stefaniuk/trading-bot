@@ -1,0 +1,24 @@
+# Scalping
+# ========
+
+# margin
+prediction: 1
+pred_mult: 1
+max_trans: 15
+max_margin_risk: 0.65
+
+# stop-loss
+swap: 0.1
+stop_limit: 0.1
+max_records: 60
+
+# prefs
+prefs:
+  - EUR/USD zero
+  - EUR/USD
+  - USD/JPY zero
+  - USD/JPY
+  - GBP/USD zero
+  - GBP/USD
+  - USD/CHF zero
+  - USD/CHF
