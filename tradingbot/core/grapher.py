@@ -15,7 +15,9 @@ class Grapher(object):
         self.monitor = conf.config['monitor']
         self.api = API(self.config.config['logger_level'])
         self.prefs = self.monitor['stocks']
+        self.prefs.extend(self.strategy['prefs'])
         self.stocks = []
+        self.count = 0
         self.live = Event()
 
     def _waitTerminate(self, interval):
@@ -77,8 +79,9 @@ class Grapher(object):
                 if stock.market:
                     if not [x for x in self.stocks if x.name == stock.name]:
                         self.stocks.append(CandlestickStock(stock.name))
-                    candle = [x for x in self.stocks if x.name == stock.name][0]
-                    prices = [var[0] for var in stock.vars]
+                    candle = [x for x in self.stocks
+                              if x.name == stock.name][0]
+                    prices = [float(var[0]) for var in stock.vars]
                     sent = [var[1] for var in stock.vars][-1]
                     candle.addRecord(prices[0], max(prices), min(prices),
                                      prices[-1])
@@ -86,7 +89,9 @@ class Grapher(object):
                     count += 1
                 else:
                     if [x for x in self.stocks if x.name == stock.name]:
-                        self.stocks.remove([x for x in self.stocks if x.name == stock.name][0])
+                        self.stocks.remove([x for x in self.stocks
+                                            if x.name == stock.name][0])
+            self.count += 1
             logger.debug(f"updated {count} candlestick")
             self._waitTerminate(60)
 
@@ -101,7 +106,8 @@ class Grapher(object):
             return False
 
     def isClose(self, name, value):
-        price = float([x.vars[-1] for x in self.api.stocks if x.name == name][0][0])
+        price = float(
+            [x.vars[-1] for x in self.api.stocks if x.name == name][0][0])
         records = [x.records for x in self.stocks if x.name == name][0]
         mx = max([float(x[1]) for x in records])
         mn = min([float(x[2]) for x in records])

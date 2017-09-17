@@ -29,7 +29,7 @@ class PredictStock(BaseStock):
 
 
 class PredictStockScalping(PredictStock):
-    def __init__(slef, candlestick):
+    def __init__(self, candlestick):
         super().__init__(candlestick)
         self.momentum = []
         self.k_fast_list = []
@@ -41,12 +41,16 @@ class PredictStockScalping(PredictStock):
         self.k_list = self.k_list[-3:]
 
     def mom_up(self):
+        if len(self.momentum) < 2:
+            return False
         if self.momentum[-2] <= 20 < self.momentum[-1]:
             return True
         else:
             return False
 
     def mom_down(self):
+        if len(self.momentum) < 2:
+            return False
         if self.momentum[-2] >= 80 > self.momentum[-1]:
             return True
         else:

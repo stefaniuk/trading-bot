@@ -25,17 +25,17 @@ class Bot(object):
                           help="Set the level of verbosity.",
                           action="store",
                           type="string")
-        parser.add_option("--conf",
-                          dest="conf",
-                          default=False,
-                          help="Config only.",
-                          action="store_true")
         parser.add_option("-w", "--wait",
                           dest="wait",
                           default=2,
                           help="minute to attend before starting main algo.",
                           action="store",
                           type="int")
+        parser.add_option("--conf",
+                          dest="conf",
+                          default=False,
+                          help="Config only.",
+                          action="store_true")
         (options, args) = parser.parse_args()
         self.options = options
 
@@ -55,11 +55,10 @@ class Bot(object):
         password2 = getpass(printer.user_input("Password: "))
         prefs = input(printer.user_input(
             "Favourite stocks (sep by spaces): "))
-        stock = []
+        stocks = []
         if prefs:
-            stock = prefs.split(' ')
+            stocks = prefs.split(' ')
         strategy = input(printer.user_input("Strategy: "))
-        stock.extend(strategy['prefs'])
         general = {'username': username, 'password': password}
         monitor = {'username': username2, 'password': password2,
                    'stocks': stocks, 'initiated': 0}
@@ -79,16 +78,16 @@ class Bot(object):
         if self.options.conf:
             try:
                 self.__start_conf()
-                logger.info("config saved")
-            except Exception as e:
-                logger.error(e)
+                print("config saved")
+            except Exception:
+                raise
             finally:
                 sys.exit()
         self.conf()
         self.configurer.config['logger_level'] = self.options.verbosity
         self.configurer.save()
         self.scalper = Scalper(self.configurer)
-        self.scalper.start(60*self.option.wait)
+        self.scalper.start(60*self.options.wait)
 
     def stop(self):
         self.scalper.stop()

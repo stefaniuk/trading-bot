@@ -7,6 +7,9 @@ class Configurer(object):
         self.config_file = path
         self.config = {}
 
+    def __repr__(self):
+        return self.config
+
     def read(self):
         with open(self.config_file, 'r') as f:
             self.config = yaml.load(f)

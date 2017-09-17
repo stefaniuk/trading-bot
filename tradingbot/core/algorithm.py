@@ -4,48 +4,55 @@ from threading import Thread
 from .color import *
 from .logger import *
 from ..configurer import Configurer
-from .stocks import PredictStock
+from .stocks import PredictStockScalping
 from .grapher import Grapher
 from .handler import Handler
 
 
 class Calculator(object):
-    def __init__(self, graph):
+    def __init__(self, p_stock, graph):
+        self.name = p_stock.name
         self.graph = graph
         self.emas = []
 
     def __clear(self):
         self.emas = self.emas[:50]
 
-    def sma(self, name, periods, unit=1):
+    def sma(self, periods, unit=1):
         periods *= unit
-        records = [x.records for x in self.graph.stocks if x.name == name][0]
+        records = [x.records for x in self.graph.stocks
+                   if x.name == self.name][0]
         close_list = [x[-1] for x in records[-periods:]]
-        return sum(close_list) / periods
+        return sum(close_list) / len(close_list)
 
-    def ema(self, name, periods, unit=1):
-        records = [x.records for x in self.graph.stocks if x.name == name][0]
+    def ema(self, periods, unit=1):
+        records = [x.records for x in self.graph.stocks
+                   if x.name == self.name][0]
         close = records[-1][-1]
-        initial_sma = self.sma(name, periods, unit)
+        print(close)
         multiplier = 2 / (periods + 1)
+        print(multiplier)
         if len(self.emas) == 0:
             latest_ema = close
         else:
             latest_ema = self.emas[-1]
+        print(latest_ema)
         ema = (close - latest_ema) * multiplier + latest_ema
+        print(ema)
         self.emas.append(ema)
         return ema
 
-    def stochastic_oscillator_5_3_3(self, name, k_fast_list, k_list):
-        records = [x.records for x in self.graph.stocks if x.name == name][-5:]
+    def stochastic_oscillator_5_3_3(self, k_fast_list, k_list):
+        records = [x.records for x in self.graph.stocks
+                   if x.name == self.name][0][-5:]
         close = records[-1][-1]
         highest_high = max([x[1] for x in records])
         lowest_low = min([x[2] for x in records])
         k_fast = (close - lowest_low) / (highest_high - lowest_low) * 100
         k_fast_list.append(k_fast)
-        k = sum(k_fast_list[-3:])
+        k = sum(k_fast_list[-3:]) / 3
         k_list.append(k)
-        d = sum(k_list[-3:])
+        d = sum(k_list[-3:]) / 3
         return d
 
 
@@ -136,35 +143,42 @@ class Scalper(BaseAlgorithm):
     '''Scalper algorithm class'''
     def __init__(self, conf):
         super().__init__(conf)
-        self.calculator = Calculator(self.graph)
         logger.debug("Scalper algortihm initialized")
 
     def work(self):
         for stock in self.graph.stocks:
             if stock not in [x.candlestick for x in self.stocks]:
                 self.stocks.append(PredictStockScalping(stock))
-            p_stock = [x for x in self.stocks if x.candlestick == stock][0]
+                p_stock = [x for x in self.stocks if x.candlestick == stock][0]
+                p_stock.calculator = Calculator(p_stock, self.graph)
+            else:
+                p_stock = [x for x in self.stocks if x.candlestick == stock][0]
             p_stock.prediction = 0
-            ema_50 = self.calculator.ema(p_stock.name, 50)
-            ema_100 = self.calculator.ema(p_stock.name, 100)
+            ema_50 = p_stock.calculator.ema(50)
+            ema_100 = p_stock.calculator.ema(100)
             price = [x.vars for x in self.graph.api.stocks
                      if x.name == stock.name][0][-1][0]
-            momentum = self.calculator.stochastic_oscillator_5_3_3(
-                p_stock.name, p_stock.k_fast_list, p_stock.k_list)
+            momentum = p_stock.calculator.stochastic_oscillator_5_3_3(
+                p_stock.k_fast_list, p_stock.k_list)
+            logger.debug(f"Price: {bold(price)}")
+            logger.debug(f"EMA 50: {bold(ema_50)}")
+            logger.debug(f"EMA 100: {bold(ema_100)}")
+            logger.debug(f"Momentum: {bold(momentum)}")
             p_stock.momentum.append(momentum)
-            P_stock.clear()
+            p_stock.clear()
             if (ema_50 > ema_100 and price < ema_100 and p_stock.mom_up()):
                 p_stock.prediction = 1
-                logger.debug(f"It's profitable to buy ")
+                logger.info(f"It's profitable to {bold('buy')} {p_stock.name}")
             else:
                 p_stock.prediction = 0
 
     def run(self):
         while self.graph.live.wait(5):
-            old_stock_n = len(self.graph.stocks)
+            old_stock_n = self.graph.count
             self.work()
             for x in self.stocks:
                 if x.prediction is True:
                     self.handler.addMov(x.name, 30, 10)
-            while len(self.graph.stocks) == len(old_stock_n):
-                time.sleep(1)
+            while self.graph.count == old_stock_n:
+                if not self.graph._waitTerminate(1):
+                    break
