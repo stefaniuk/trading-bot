@@ -29,16 +29,12 @@ class Calculator(object):
         records = [x.records for x in self.graph.stocks
                    if x.name == self.name][0]
         close = records[-1][-1]
-        print(close)
         multiplier = 2 / (periods + 1)
-        print(multiplier)
         if len(self.emas) == 0:
             latest_ema = close
         else:
             latest_ema = self.emas[-1]
-        print(latest_ema)
         ema = (close - latest_ema) * multiplier + latest_ema
-        print(ema)
         self.emas.append(ema)
         return ema
 
@@ -73,13 +69,13 @@ class BaseAlgorithm(object):
     def start(self, sleep_time=0):
         T3 = Thread(target=self.graph.start)
         T4 = Thread(target=self.handler.start)
-        T5 = Thread(target=self.run)
+        T5 = Thread(target=self.run, args=(sleep_time,))
         T5.deamon = True
         T3.start()
         T4.start()
         T3.join()
         T4.join()
-        time.sleep(sleep_time)
+        time.sleep(65)
         T5.start()
         logger.debug("Pivoting thread #5 launched")
 
@@ -87,7 +83,7 @@ class BaseAlgorithm(object):
         self.graph.stop()
         self.handler.stop()
 
-
+# DOESN'T WORK
 class Pivot(BaseAlgorithm):
     def __init__(self, conf):
         super().__init__(conf)
@@ -145,8 +141,16 @@ class Scalper(BaseAlgorithm):
         super().__init__(conf)
         logger.debug("Scalper algortihm initialized")
 
+    def _get_margin(self):
+        margin = (self.strategy['max_trans'] *
+                  (self.handler.api.get_bottom_info('free_funds') *
+                   self.strategy['max_margin_risk']))
+        return margin
+
     def work(self):
         for stock in self.graph.stocks:
+            if stock.name.find('zero') == -1:
+                continue
             if stock not in [x.candlestick for x in self.stocks]:
                 self.stocks.append(PredictStockScalping(stock))
                 p_stock = [x for x in self.stocks if x.candlestick == stock][0]
@@ -154,31 +158,49 @@ class Scalper(BaseAlgorithm):
             else:
                 p_stock = [x for x in self.stocks if x.candlestick == stock][0]
             p_stock.prediction = 0
-            ema_50 = p_stock.calculator.ema(50)
-            ema_100 = p_stock.calculator.ema(100)
-            price = [x.vars for x in self.graph.api.stocks
-                     if x.name == stock.name][0][-1][0]
+            p_stock.ema_50 = p_stock.calculator.ema(50)
+            p_stock.ema_100 = p_stock.calculator.ema(100)
+            p_stock.price = [x.vars for x in self.graph.api.stocks
+                             if x.name == stock.name][0][-1][0]
             momentum = p_stock.calculator.stochastic_oscillator_5_3_3(
                 p_stock.k_fast_list, p_stock.k_list)
-            logger.debug(f"Price: {bold(price)}")
-            logger.debug(f"EMA 50: {bold(ema_50)}")
-            logger.debug(f"EMA 100: {bold(ema_100)}")
+            logger.debug(f"Price: {bold(p_stock.price)}")
+            logger.debug(f"EMA 50: {bold(p_stock.ema_50)}")
+            logger.debug(f"EMA 100: {bold(p_stock.ema_100)}")
             logger.debug(f"Momentum: {bold(momentum)}")
             p_stock.momentum.append(momentum)
+            p_stock.margin = self._get_margin()
             p_stock.clear()
-            if (ema_50 > ema_100 and price < ema_100 and p_stock.mom_up()):
-                p_stock.prediction = 1
-                logger.info(f"It's profitable to {bold('buy')} {p_stock.name}")
-            else:
-                p_stock.prediction = 0
 
-    def run(self):
+    def worth(self, stock):
+        if (stock.ema_50 > stock.ema_100 and
+                stock.price < stock.ema_100 and stock.mom_up()):
+            p_stock.mode = 'buy'
+            logger.info(f"It's profitable to {bold('buy')} {p_stock.name}")
+            return True
+        elif (stock.ema_50 < stock.ema_100 and
+              stock.price > stock.ema_100 and stock.mom_down()):
+            p_stock.mode = 'sell'
+            logger.info(f"It's profitable to {bold('buy')} {p_stock.name}")
+            return True
+        else:
+            return False
+
+    def run(self, time=1):
         while self.graph.live.wait(5):
             old_stock_n = self.graph.count
             self.work()
-            for x in self.stocks:
-                if x.prediction is True:
-                    self.handler.addMov(x.name, 30, 10)
+            time -= 1
+            if time <= 0:
+                for x in self.stocks:
+                    if self.worth(x):
+                        self.handler.addMov(x.name, 30, 10,
+                                            x.margin, mode=x.mode)
+                    if x.name == 'eur/usd zero spread':
+                        self.handler.addMov(x.name, 30, 10,
+                                            x.margin, mode='buy')
             while self.graph.count == old_stock_n:
-                if not self.graph._waitTerminate(1):
+                if self.graph.live.is_set():
+                    self.graph._waitTerminate(1)
+                else:
                     break

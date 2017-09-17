@@ -14,7 +14,8 @@ class Grapher(object):
         self.strategy = strat
         self.monitor = conf.config['monitor']
         self.api = API(self.config.config['logger_level'])
-        self.prefs = self.monitor['stocks'].extend(self.strategy['prefs'])
+        self.prefs = self.monitor['stocks']
+        self.prefs.extend(self.strategy['prefs'])
         self.stocks = []
         self.count = 0
         self.live = Event()

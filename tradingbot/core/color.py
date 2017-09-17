@@ -71,7 +71,7 @@ class printer(object):
 
     @staticmethod
     def critical(string=''):
-        return '[' + bold(red('~')) + '] ' + str(string)
+        return '[' + bold(red('§')) + '] ' + str(string)
 
     @staticmethod
     def user_input(string=''):

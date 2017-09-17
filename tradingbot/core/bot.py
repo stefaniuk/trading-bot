@@ -27,7 +27,7 @@ class Bot(object):
                           type="string")
         parser.add_option("-w", "--wait",
                           dest="wait",
-                          default=2,
+                          default=1,
                           help="minute to attend before starting main algo.",
                           action="store",
                           type="int")
@@ -87,7 +87,7 @@ class Bot(object):
         self.configurer.config['logger_level'] = self.options.verbosity
         self.configurer.save()
         self.scalper = Scalper(self.configurer)
-        self.scalper.start(60*self.options.wait)
+        self.scalper.start(self.options.wait)
 
     def stop(self):
         self.scalper.stop()
