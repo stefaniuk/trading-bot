@@ -23,6 +23,7 @@ test.py
 *.egg-info/
 .installed.cfg
 *.egg
+*.lock
 
 # Installer logs
 pip-log.txt
