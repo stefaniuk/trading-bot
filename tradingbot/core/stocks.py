@@ -1,7 +1,20 @@
+# -*- coding: utf-8 -*-
+
+"""
+tradingbot.core.stocks
+~~~~~~~~~~~~~~
+
+This module provides stocks objects.
+"""
+
+
 class BaseStock(object):
     def __init__(self, name):
         self.name = name
         self.records = []
+
+    def _clear(self, value):
+        self.records = self.records[-value:]
 
 
 class CandlestickStock(BaseStock):
@@ -11,6 +24,7 @@ class CandlestickStock(BaseStock):
 
     def addRecord(self, openstock, maxstock, minstock, closestock):
         self.records.append([openstock, maxstock, minstock, closestock])
+        self._clear(250)
 
 
 class PredictStock(BaseStock):
@@ -19,13 +33,14 @@ class PredictStock(BaseStock):
         self.candlestick = candlestick
         self.prediction = 0
 
-    def add(self, val):
-        self.prediction += (val * (1 - self.prediction))
-
-    def multiply(self, val):
-        self.prediction *= val
-        if self.prediction > 1:
-            self.prediction = 1
+    # DEPRECATED
+    # def add(self, val):
+    #     self.prediction += (val * (1 - self.prediction))
+    #
+    # def multiply(self, val):
+    #     self.prediction *= val
+    #     if self.prediction > 1:
+    #         self.prediction = 1
 
 
 class PredictStockScalping(PredictStock):

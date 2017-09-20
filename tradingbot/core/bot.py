@@ -1,12 +1,22 @@
+# -*- coding: utf-8 -*-
+
+"""
+tradingbot.core.grapher
+~~~~~~~~~~~~~~
+
+This module provides grapher object that manipulates
+monitor account and update records and datasets.
+"""
+
 import os.path
 import time
 import sys
 from getpass import getpass
 from optparse import OptionParser
 from .color import *
-from .logger import *
+from .logger import logger
 from ..configurer import Configurer
-from .algorithm import *
+from .algorithm import Scalper
 
 
 class Bot(object):
@@ -25,6 +35,11 @@ class Bot(object):
                           help="Set the level of verbosity.",
                           action="store",
                           type="string")
+        parser.add_option("--verbosity_api",
+                          dest="verbosity_api",
+                          help="Set the level of verbosity of the API.",
+                          action="store",
+                          type="string")
         parser.add_option("-w", "--wait",
                           dest="wait",
                           default=1,
@@ -37,9 +52,11 @@ class Bot(object):
                           help="Config only.",
                           action="store_true")
         (options, args) = parser.parse_args()
+        if not hasattr(options, 'verbosity_api'):
+            options.verbosity_api = options.verbosity
         self.options = options
 
-    def __start_conf(self):
+    def _start_conf(self):
         print(printer.header("config"))
         print("Add your credentials")
         print("for Trading212")
@@ -85,6 +102,7 @@ class Bot(object):
                 sys.exit()
         self.conf()
         self.configurer.config['logger_level'] = self.options.verbosity
+        self.configurer.config['logger_level_api'] = self.options.verbosity_api
         self.configurer.save()
         self.scalper = Scalper(self.configurer)
         self.scalper.start(self.options.wait)

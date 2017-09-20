@@ -1,3 +1,12 @@
+# -*- coding: utf-8 -*-
+
+"""
+tradingbot.core.color
+~~~~~~~~~~~~~~
+
+This module provides color functions.
+"""
+
 # CONSTANTS
 CYAN = '\033[96m'
 PURPLE = '\033[95m'

@@ -13,10 +13,11 @@ max_records: 60
 # prefs
 prefs:
   - EUR/USD zero
-  - EUR/USD
   - USD/JPY zero
-  - USD/JPY
   - GBP/USD zero
-  - GBP/USD
   - USD/CHF zero
-  - USD/CHF
+secondary-prefs:
+  EUR/USD zero: EUR/USD
+  USD/JPY zero: USD/JPY
+  GBP/USD zero: GBP/USD
+  USD/CHF zero: USD/CHF

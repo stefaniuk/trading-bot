@@ -1,3 +1,10 @@
+"""
+tradingbot.core.configurer
+~~~~~~~~~~~~~~
+
+This module provides a Configurer class.
+"""
+
 import os.path
 import yaml
 

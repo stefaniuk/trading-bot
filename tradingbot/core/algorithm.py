@@ -10,6 +10,7 @@ from .handler import Handler
 
 
 class Calculator(object):
+    """namespace for complex predictive functions"""
     def __init__(self, p_stock, graph):
         self.name = p_stock.name
         self.graph = graph
@@ -19,6 +20,7 @@ class Calculator(object):
         self.emas = self.emas[:50]
 
     def sma(self, periods, unit=1):
+        """calculate the Simple Moving Average"""
         periods *= unit
         records = [x.records for x in self.graph.stocks
                    if x.name == self.name][0]
@@ -26,6 +28,7 @@ class Calculator(object):
         return sum(close_list) / len(close_list)
 
     def ema(self, periods, unit=1):
+        """calculate the Exponential Moving Average"""
         records = [x.records for x in self.graph.stocks
                    if x.name == self.name][0]
         close = records[-1][-1]
@@ -39,6 +42,7 @@ class Calculator(object):
         return ema
 
     def stochastic_oscillator_5_3_3(self, k_fast_list, k_list):
+        """calculate the Stochastic Oscillator 5 3 3"""
         records = [x.records for x in self.graph.stocks
                    if x.name == self.name][0][-5:]
         close = records[-1][-1]
@@ -53,7 +57,7 @@ class Calculator(object):
 
 
 class BaseAlgorithm(object):
-    '''abstract class for algorithm'''
+    """abstract class for algorithm"""
     def __init__(self, conf):
         # check strategy
         strat_conf = Configurer(os.path.join(
@@ -67,6 +71,7 @@ class BaseAlgorithm(object):
         self.stocks = []
 
     def start(self, sleep_time=0):
+        """start the handlers and the run function"""
         T3 = Thread(target=self.graph.start)
         T4 = Thread(target=self.handler.start)
         T5 = Thread(target=self.run, args=(sleep_time,))
@@ -80,63 +85,64 @@ class BaseAlgorithm(object):
         logger.debug("Pivoting thread #5 launched")
 
     def stop(self):
+        """stop all handlers"""
         self.graph.stop()
         self.handler.stop()
 
-# DOESN'T WORK
-class Pivot(BaseAlgorithm):
-    def __init__(self, conf):
-        super().__init__(conf)
-        logger.debug("Pivot algortihm initialized")
-
-    def getPivotPoints(self):
-        for stock in self.graph.stocks:
-            high = max([float(x[1]) for x in stock.records])
-            low = min([float(x[2]) for x in stock.records])
-            close = [float(x[3]) for x in stock.records][-1]
-            logger.debug(f"price: {close}")
-            if stock not in [x.candlestick for x in self.stocks]:
-                self.stocks.append(PredictStock(stock))
-            p_stock = [x for x in self.stocks if x.candlestick == stock][0]
-            p_stock.pp = (high + low + close) / 3
-            p_stock.sl = []
-            p_stock.sl.append((p_stock.pp * 2) - high)
-            p_stock.sl.append(p_stock.pp - (high - low))
-            p_stock.rl = []
-            p_stock.rl.append((p_stock.pp * 2) - low)
-            p_stock.rl.append(p_stock.pp + (high - low))
-
-    def isWorth(self, name):
-        stock = [x for x in self.stocks if x.name == name][0]
-        stock.prediction = 0
-        s = self.strategy
-        for val in s['sentiment_ini']:
-            if stock.candlestick.sentiment >= val[0]:
-                stock.add(val[1])
-        for support in stock.sl:
-            logger.debug(f"support: {support}")
-            if self.graph.isClose(name, support):
-                stock.add(s['support'])
-                if self.graph.isDoji(name):
-                    stock.add(s['doji'])
-        stock.multiply(stock.candlestick.sentiment*s['sentiment_mult'])
-        logger.debug(f"sentiment: {bold(stock.candlestick.sentiment)}")
-        logger.info(f"It's worth to {bold(green('buy'))} " +
-                    f"{bold(name)} on {bold(blue(stock.prediction))}")
-        return stock.prediction
-
-    def run(self):
-        while self.graph.live.wait(5):
-            self.getPivotPoints()
-            for x in self.stocks:
-                pred = self.isWorth(x.name)
-                if pred >= self.strategy['prediction']:
-                    self.handler.addMov(x.name, pred)
-            self.graph._waitTerminate(60)
+# DEPRECATED
+# class Pivot(BaseAlgorithm):
+#     def __init__(self, conf):
+#         super().__init__(conf)
+#         logger.debug("Pivot algortihm initialized")
+#
+#     def getPivotPoints(self):
+#         for stock in self.graph.stocks:
+#             high = max([float(x[1]) for x in stock.records])
+#             low = min([float(x[2]) for x in stock.records])
+#             close = [float(x[3]) for x in stock.records][-1]
+#             logger.debug(f"price: {close}")
+#             if stock not in [x.candlestick for x in self.stocks]:
+#                 self.stocks.append(PredictStock(stock))
+#             p_stock = [x for x in self.stocks if x.candlestick == stock][0]
+#             p_stock.pp = (high + low + close) / 3
+#             p_stock.sl = []
+#             p_stock.sl.append((p_stock.pp * 2) - high)
+#             p_stock.sl.append(p_stock.pp - (high - low))
+#             p_stock.rl = []
+#             p_stock.rl.append((p_stock.pp * 2) - low)
+#             p_stock.rl.append(p_stock.pp + (high - low))
+#
+#     def isWorth(self, name):
+#         stock = [x for x in self.stocks if x.name == name][0]
+#         stock.prediction = 0
+#         s = self.strategy
+#         for val in s['sentiment_ini']:
+#             if stock.candlestick.sentiment >= val[0]:
+#                 stock.add(val[1])
+#         for support in stock.sl:
+#             logger.debug(f"support: {support}")
+#             if self.graph.isClose(name, support):
+#                 stock.add(s['support'])
+#                 if self.graph.isDoji(name):
+#                     stock.add(s['doji'])
+#         stock.multiply(stock.candlestick.sentiment*s['sentiment_mult'])
+#         logger.debug(f"sentiment: {bold(stock.candlestick.sentiment)}")
+#         logger.info(f"It's worth to {bold(green('buy'))} " +
+#                     f"{bold(name)} on {bold(blue(stock.prediction))}")
+#         return stock.prediction
+#
+#     def run(self):
+#         while events.LIVE.wait(5):
+#             self.getPivotPoints()
+#             for x in self.stocks:
+#                 pred = self.isWorth(x.name)
+#                 if pred >= self.strategy['prediction']:
+#                     self.handler.addMov(x.name, pred)
+#             events.LIVE.wait_terminate(60)
 
 
 class Scalper(BaseAlgorithm):
-    '''Scalper algorithm class'''
+    """Scalper algorithm class"""
     def __init__(self, conf):
         super().__init__(conf)
         logger.debug("Scalper algortihm initialized")
@@ -148,6 +154,7 @@ class Scalper(BaseAlgorithm):
         return margin
 
     def work(self):
+        """update the predict stocks list"""
         for stock in self.graph.stocks:
             if stock.name.find('zero') == -1:
                 continue
@@ -173,6 +180,7 @@ class Scalper(BaseAlgorithm):
             p_stock.clear()
 
     def worth(self, stock):
+        """check if it's worth to place a movement"""
         if (stock.ema_50 > stock.ema_100 and
                 stock.price < stock.ema_100 and stock.mom_up()):
             p_stock.mode = 'buy'
@@ -187,7 +195,8 @@ class Scalper(BaseAlgorithm):
             return False
 
     def run(self, time=1):
-        while self.graph.live.wait(5):
+        """main run function, here it is the pivot of the algorithm"""
+        while events.LIVE.wait(5):
             old_stock_n = self.graph.count
             self.work()
             time -= 1
@@ -200,7 +209,7 @@ class Scalper(BaseAlgorithm):
                         self.handler.addMov(x.name, 30, 10,
                                             x.margin, mode='buy')
             while self.graph.count == old_stock_n:
-                if self.graph.live.is_set():
-                    self.graph._waitTerminate(1)
+                if events.LIVE.is_set():
+                    events.LIVE.wait_terminate(1)
                 else:
                     break

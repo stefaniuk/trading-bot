@@ -1,3 +1,12 @@
+# -*- coding: utf-8 -*-
+
+"""
+tradingbot.core.logger
+~~~~~~~~~~~~~~
+
+This module customize logging.
+"""
+
 from os import path
 import sys
 import re
@@ -15,38 +24,24 @@ class logger(object):
     def setlevel(level):
         logging.getLogger().setLevel(getattr(logging, level.upper()))
 
+    def __get_date():
+        return re.match(r'\d+:\d+:\d+', str(datetime.now().time())).group(0)
+
     def debug(s):
-        logging.debug(
-            printer.process(
-                '- ' + re.match(
-                    r'\d+:\d+:\d+',
-                    str(datetime.now().time())).group(0) + ' - ' + s))
+        logging.debug(printer.process('- ' + logger.__get_date() + ' - ' + s))
 
     def info(s):
-        logging.info(
-            printer.info(
-                    '- ' + re.match(
-                        r'\d+:\d+:\d+',
-                        str(datetime.now().time())).group(0) + ' - ' + s))
+        logging.info(printer.info('- ' + logger.__get_date() + ' - ' + s))
 
     def warning(s):
         logging.warning(
-            printer.warning(
-                '- ' + re.match(
-                    r'\d+:\d+:\d+',
-                    str(datetime.now().time())).group(0) + ' - ' + yellow(s)))
+            printer.warning('- ' + logger.__get_date() + ' - ' + yellow(s)))
 
     def error(s):
         logging.error(
-            printer.error(
-                '- ' + re.match(
-                    r'\d+:\d+:\d+',
-                    str(datetime.now().time())).group(0) + ' - ' + red(s)))
+            printer.error('- ' + logger.__get_date() + ' - ' + red(s)))
 
     def critical(s):
         logging.critical(
             printer.critical(
-                '- ' + re.match(
-                    r'\d+:\d+:\d+',
-                    str(datetime.now().time())).group(0) +
-                ' - ' + bold(red(s))))
+                '- ' + logger.__get_date() + ' - ' + bold(red(s))))
