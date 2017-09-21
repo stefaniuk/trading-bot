@@ -20,8 +20,8 @@ class Handler(object):
     def __init__(self, conf, strategy, graph):
         self.config = conf
         self.strategy = strategy
-        self.api = tradingAPI.API(self.config.config['logger_level_api'])
-        self.supp = ApiSupp(self.graph)
+        self.api = tradingAPI.API(conf.config['logger_level_api'])
+        self.supp = ApiSupp(graph)
         self.graph = graph
         self.stocks = []
         logger.debug("Handler initialized")

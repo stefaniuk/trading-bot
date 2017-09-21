@@ -24,9 +24,9 @@ class Grapher(object):
         self.config = conf
         self.strategy = strat
         self.monitor = conf.config['monitor']
-        self.api = API(self.config.config['logger_level_api'])
+        self.api = API(conf.config['logger_level_api'])
         self.prefs = self.monitor['stocks']
-        self.prefs.extend(self.strategy['prefs'])
+        self.prefs.extend(strat['prefs'])
         self.stocks = []
         self.count = 0
         logger.debug("Grapher initialized")

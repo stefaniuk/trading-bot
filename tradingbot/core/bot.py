@@ -52,7 +52,7 @@ class Bot(object):
                           help="Config only.",
                           action="store_true")
         (options, args) = parser.parse_args()
-        if not hasattr(options, 'verbosity_api'):
+        if options.verbosity_api is None:
             options.verbosity_api = options.verbosity
         self.options = options
 
@@ -89,12 +89,12 @@ class Bot(object):
         if self.configurer.checkFile():
             self.configurer.read()
         else:
-            self.__start_conf()
+            self._start_conf()
 
     def start(self):
         if self.options.conf:
             try:
-                self.__start_conf()
+                self._start_conf()
                 print("config saved")
             except Exception:
                 raise
@@ -119,6 +119,7 @@ def main():
             time.sleep(1)
     except Exception as e:
         logger.error(e)
+        raise
     except KeyboardInterrupt as e:
         sys.stderr.write('\r' + printer.info(red("exiting...\n")))
         bot.stop()
