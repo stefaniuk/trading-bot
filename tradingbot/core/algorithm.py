@@ -3,6 +3,7 @@ import os.path
 from threading import Thread
 from .color import *
 from .logger import *
+from ..core import events
 from ..configurer import Configurer
 from .stocks import PredictStockScalping
 from .grapher import Grapher

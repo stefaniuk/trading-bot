@@ -11,7 +11,8 @@ monitor account and update records and datasets.
 import time
 import threading
 from tradingAPI import API
-from tradingbot.core import events
+from tradingAPI.exceptions import BrowserException
+from ..core import events
 from .color import *
 from .logger import logger
 from .utils import _close_to
@@ -55,7 +56,7 @@ class Grapher(object):
         events.LIVE.clear()
         try:
             self.api.logout()
-        except tradingAPI.exceptions.BrowserException as e:
+        except BrowserException as e:
             logger.warning(f"Warning: {e}")
 
     def addPrefs(self):
