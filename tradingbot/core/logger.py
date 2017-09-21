@@ -19,10 +19,11 @@ from .color import *
 class logger(object):
     logging.config.fileConfig(
         path.join(path.dirname(__file__), 'logging.conf'))
-    logging.getLogger().setLevel(getattr(logging, 'DEBUG'))
+    logging.getLogger().setLevel(getattr(logging, 'CRITICAL'))
 
     def setlevel(level):
         logging.getLogger().setLevel(getattr(logging, level.upper()))
+        logging.getLogger().propagate = False
 
     def __get_date():
         return re.match(r'\d+:\d+:\d+', str(datetime.now().time())).group(0)

@@ -21,11 +21,11 @@ from .algorithm import Scalper
 
 class Bot(object):
     def __init__(self):
+        self.getArgvs()
+        logger.setlevel(self.options.verbosity)
         path = os.path.join(os.path.dirname(os.path.dirname(__file__)),
                             "data.yml")
         self.configurer = Configurer(path)
-        self.getArgvs()
-        logger.setlevel(self.options.verbosity)
 
     def getArgvs(self):
         parser = OptionParser()
