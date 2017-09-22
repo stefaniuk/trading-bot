@@ -13,7 +13,7 @@ from .data import pip_table
 
 
 def __get_key(name, dicty):
-    key = [x for x in dicty.keys if x in name]
+    key = [x for x in dicty.keys() if x in name]
     if key:
         pip = pip_table[key[0]]
 
