@@ -168,8 +168,12 @@ class Scalper(BaseAlgorithm):
             p_stock.ema_100 = p_stock.calculator.ema(100)
             p_stock.price = [x.vars for x in self.graph.api.stocks
                              if x.name == stock.name][0][-1][0]
-            momentum = p_stock.calculator.stochastic_oscillator_5_3_3(
-                p_stock.k_fast_list, p_stock.k_list)
+            try:
+                momentum = p_stock.calculator.stochastic_oscillator_5_3_3(
+                    p_stock.k_fast_list, p_stock.k_list)
+            except ZeroDivisionError:
+                logger.warning("momentum: highest price equal to lowest price")
+                momentum = None
             logger.debug(f"Price: {bold(p_stock.price)}")
             logger.debug(f"EMA 50: {bold(p_stock.ema_50)}")
             logger.debug(f"EMA 100: {bold(p_stock.ema_100)}")
@@ -182,13 +186,13 @@ class Scalper(BaseAlgorithm):
         """check if it's worth to place a movement"""
         if (stock.ema_50 > stock.ema_100 and
                 stock.price < stock.ema_100 and stock.mom_up()):
-            p_stock.mode = 'buy'
-            logger.info(f"It's profitable to {bold('buy')} {p_stock.name}")
+            stock.mode = 'buy'
+            logger.info(f"It's profitable to {bold('buy')} {stock.name}")
             return True
         elif (stock.ema_50 < stock.ema_100 and
               stock.price > stock.ema_100 and stock.mom_down()):
-            p_stock.mode = 'sell'
-            logger.info(f"It's profitable to {bold('buy')} {p_stock.name}")
+            stock.mode = 'sell'
+            logger.info(f"It's profitable to {bold('buy')} {stock.name}")
             return True
         else:
             return False

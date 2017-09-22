@@ -55,17 +55,23 @@ class PredictStockScalping(PredictStock):
         self.k_fast_list = self.k_fast_list[-3:]
         self.k_list = self.k_list[-3:]
 
-    def mom_up(self):
-        if len(self.momentum) < 2:
+    def _check_mom(self):
+        if not isinstance(self.momentum, type(0.0)):
             return False
+        elif len(self.momentum) < 2:
+            return False
+        else:
+            return True
+
+    def mom_up(self):
+        self._check_mom()
         if self.momentum[-2] <= 20 < self.momentum[-1]:
             return True
         else:
             return False
 
     def mom_down(self):
-        if len(self.momentum) < 2:
-            return False
+        self._check_mom()
         if self.momentum[-2] >= 80 > self.momentum[-1]:
             return True
         else:
