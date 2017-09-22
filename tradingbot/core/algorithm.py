@@ -157,8 +157,6 @@ class Scalper(BaseAlgorithm):
     def work(self):
         """update the predict stocks list"""
         for stock in self.graph.stocks:
-            if stock.name.find('zero') == -1:
-                continue
             if stock not in [x.candlestick for x in self.stocks]:
                 self.stocks.append(PredictStockScalping(stock))
                 p_stock = [x for x in self.stocks if x.candlestick == stock][0]
