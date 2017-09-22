@@ -15,7 +15,9 @@ from .data import pip_table
 def __get_key(name, dicty):
     key = [x for x in dicty.keys() if x in name]
     if key:
-        pip = pip_table[key[0]]
+        return dicty[key[0]]
+    else:
+        return False
 
 
 def _close_to(val1, val2, swap):
@@ -29,9 +31,8 @@ def _close_to(val1, val2, swap):
 def _conv_limit(gain, loss, name):
     """convert pip from natural numbers
      to corresponding float number"""
-    try:
-        pip = __get_key(name, pip_table)
-    except Exception:
+    pip = __get_key(name, pip_table)
+    if pip is False:
         logger.warning(f"limit not converted for {name}")
         raise
     gain *= pip
