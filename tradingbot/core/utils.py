@@ -8,11 +8,12 @@ tradingbot.core.utils
 This module provides utility functions that are used within tradinbot.
 """
 
+import functools
 from .logger import logger
 from .data import pip_table
 
 
-def __get_key(name, dicty):
+def _get_key(name, dicty):
     key = [x for x in dicty.keys() if x in name]
     if key:
         return dicty[key[0]]
@@ -31,7 +32,7 @@ def _close_to(val1, val2, swap):
 def _conv_limit(gain, loss, name):
     """convert pip from natural numbers
      to corresponding float number"""
-    pip = __get_key(name, pip_table)
+    pip = _get_key(name, pip_table)
     if pip is False:
         logger.warning(f"limit not converted for {name}")
         raise
@@ -40,28 +41,16 @@ def _conv_limit(gain, loss, name):
     return gain, loss
 
 
-# -~- Momoize -~-
-class Memoize:
-    def __init__(self, fn):
-        self.fn = fn
-        self.memo = {}
-
-    def __call__(self, *args):
-        if args not in self.memo:
-            self.memo[args] = self.fn(*args)
-        return self.memo[args]
-
-
 # -~- API supplements -~-
 class ApiSupp(object):
     def __init__(self, api):
         self.api = api
 
-    @Memoize
+    @functools.lru_cache(maxsize=None)
     def get_unit_value(self, name):
         if self.api.open_mov(name):
             try:
-                pip = __get_key(name, pip_table)
+                pip = _get_key(name, pip_table)
                 if pip is False:
                     raise
                 quant = 1 / pip

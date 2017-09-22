@@ -203,12 +203,12 @@ class Scalper(BaseAlgorithm):
             old_stock_n = self.graph.count
             self.work()
             time -= 1
-            if time <= 0:
+            if time < 0:
                 for x in self.stocks:
                     if self.worth(x):
                         self.handler.addMov(x.name, 30, 10,
                                             x.margin, mode=x.mode)
-                    if x.name.lower() == 'eur/usd zero spread':
+                    if x.name.lower() == 'eur/usd zero':
                         self.handler.addMov(x.name, 30, 10,
                                             x.margin, mode='buy')
             while self.graph.count == old_stock_n:

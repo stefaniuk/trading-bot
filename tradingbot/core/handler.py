@@ -21,7 +21,7 @@ class Handler(object):
         self.config = conf
         self.strategy = strategy
         self.api = tradingAPI.API(conf.config['logger_level_api'])
-        self.supp = ApiSupp(graph)
+        self.supp = ApiSupp(graph.api)
         self.graph = graph
         self.stocks = []
         logger.debug("Handler initialized")
@@ -64,9 +64,9 @@ class Handler(object):
         logger.debug(f"free funds: {free_funds}")
         result = self.api.addMov(
             prod, mode=mode, stop_limit=stop_limit, auto_quantity=margin)
-        if isinstance(int(), type(result)):
+        if isinstance(0.0, type(result)):
             margin -= result
-        isint = isinstance(int(), type(result))
+        isint = isinstance(0.0, type(result))
         insfunds = result == 'INSFU'
         if isint or insfunds and self.strategy.get('secondary-prefs'):
             prod = self.strategy['secondary-prefs'][prod]
