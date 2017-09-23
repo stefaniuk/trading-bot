@@ -208,9 +208,6 @@ class Scalper(BaseAlgorithm):
                     if self.worth(x):
                         self.handler.addMov(x.name, 30, 10,
                                             x.margin, mode=x.mode)
-                    if x.name.lower() == 'eur/usd zero':
-                        self.handler.addMov(x.name, 30, 10,
-                                            x.margin, mode='buy')
             while self.graph.count == old_stock_n:
                 if events.LIVE.is_set():
                     events.LIVE.wait_terminate(1)
