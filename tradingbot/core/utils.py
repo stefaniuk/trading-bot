@@ -88,6 +88,7 @@ class ApiSupp(object):
 
     @functools.lru_cache()
     def get_unit_value(self, name):
+        """get unit value of stock based on margin"""
         if self.api.open_mov(name):
             try:
                 pip = _get_key(name, pip_table)

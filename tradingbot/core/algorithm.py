@@ -149,9 +149,9 @@ class Scalper(BaseAlgorithm):
         logger.debug("Scalper algortihm initialized")
 
     def _get_margin(self):
-        margin = (self.strategy['max_trans'] *
-                  (self.handler.api.get_bottom_info('free_funds') *
-                   self.strategy['max_margin_risk']))
+        margin = ((self.handler.api.get_bottom_info('free_funds') *
+                   self.strategy['max_margin_risk'])
+                  / self.strategy['max_trans'])
         return margin
 
     def work(self):

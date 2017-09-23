@@ -73,6 +73,7 @@ class Handler(object):
             prod = self.strategy['secondary-prefs'][prod]
             unit_value = self.supp.get_unit_value(prod)
             quant = margin // unit_value
+            logger.debug(f"{prod} {quant} - {margin} : {unit_value}")
             self.api.addMov(
                 prod, quantity=quant, mode=mode, stop_limit=stop_limit)
 
