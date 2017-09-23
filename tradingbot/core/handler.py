@@ -12,7 +12,7 @@ import tradingAPI
 from .color import *
 from .logger import logger
 from .stocks import StockAnalysis
-from .utils import _conv_limit, ApiSupp
+from .utils import conv_limit, ApiSupp
 
 
 class Handler(object):
@@ -58,17 +58,18 @@ class Handler(object):
         if not [x for x in self.stocks if x.name == prod]:
             self.stocks.append(StockAnalysis(prod))
         stock = [x for x in self.stocks if x.name == prod][0]
-        gain, loss = _conv_limit(gain, loss, stock.name)
+        gain, loss = conv_limit(gain, loss, stock.name)
         stop_limit = {'mode': 'unit', 'value': (gain, loss)}
         free_funds = self.api.get_bottom_info('free_funds')
         logger.debug(f"free funds: {free_funds}")
         result = self.api.addMov(
             prod, mode=mode, stop_limit=stop_limit, auto_quantity=margin)
-        if isinstance(0.0, type(result)):
-            margin -= result
         isint = isinstance(0.0, type(result))
+        if isint:
+            margin -= result
         insfunds = result == 'INSFU'
-        if isint or insfunds and self.strategy.get('secondary-prefs'):
+        if (isint or insfunds) and self.strategy.get('secondary-prefs'):
+            logger.debug(f"Buying more {prod}")
             prod = self.strategy['secondary-prefs'][prod]
             unit_value = self.supp.get_unit_value(prod)
             quant = margin // unit_value

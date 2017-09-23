@@ -15,7 +15,7 @@ from tradingAPI.exceptions import BrowserException
 from ..core import events
 from .color import *
 from .logger import logger
-from .utils import _close_to
+from .utils import close_to
 from .stocks import CandlestickStock
 
 
@@ -121,6 +121,6 @@ class Grapher(object):
         mn = min([float(x[2]) for x in records])
         swap = self.strategy['swap'] * (mx - mn)
         logger.debug(f"swap: {swap}")
-        if _close_to(price, value, swap):
+        if close_to(price, value, swap):
             logger.debug(f"{price} is close to {value}")
             return True
