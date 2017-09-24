@@ -70,16 +70,17 @@ class Handler(object):
             margin -= result
         insfunds = result == 'INSFU'
         if (isint or insfunds) and self.strategy.get('secondary-prefs'):
-            new_prod = self.strategy['secondary-prefs'][prod]
-            logger.debug(f"Buying more {new_prod}")
-            self.poll.add(self.supp.get_unit_value, args=[new_prod])
-            unit_value = self.poll.get(self.supp.get_unit_value,
-                                       args=[new_prod])
-            quant = margin // unit_value
-            logger.debug(f"{new_prod} {quant} - {margin} : {unit_value}")
-            self.api.addMov(
-                new_prod, quantity=quant, mode=mode, stop_limit=stop_limit,
-                name_counter=prod)
+            if self.strategy['secondary-prefs'].get(prod):
+                new_prod = self.strategy['secondary-prefs'][prod]
+                logger.debug(f"Buying more {new_prod}")
+                self.poll.add(self.supp.get_unit_value, args=[new_prod])
+                unit_value = self.poll.get(self.supp.get_unit_value,
+                                           args=[new_prod])
+                quant = margin // unit_value
+                logger.debug(f"{new_prod} {quant} - {margin} : {unit_value}")
+                self.api.addMov(
+                    new_prod, quantity=quant, mode=mode, stop_limit=stop_limit,
+                    name_counter=prod)
 
     def closeMov(self, product, quantity=None, price=None):
         """close a movement by name and quantity (or price).
