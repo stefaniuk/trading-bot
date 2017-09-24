@@ -80,6 +80,37 @@ def conv_limit(gain, loss, name):
 #             self.cache[args] = value
 #             return value
 
+# -~- Command Pool -~-
+class CommandPool(object):
+    def __init__(self):
+        self.pool = []
+        self.results = []
+        self.working = False
+
+    def add(self, command, args=[], kwargs={}):
+        self.pool.append([command, args, kwargs])
+        if self.working is False:
+            self.work()
+
+    def work(self):
+        self.working = True
+        while self.pool:
+            for func in self.pool:
+                res = func[0](*func[1], **func[2])
+                if res is not None:
+                    self.results.append((func, res))
+                self.pool.remove(func)
+        self.working = False
+
+    def get(self, command, args=[], kwargs={}):
+        f = [command, args, kwargs]
+        try:
+            res = [x for x in self.results if x[0] == f][0]
+            self.results.remove(res)
+            return res[1]
+        except Exception:
+            raise
+
 
 # -~- API supplements -~-
 class ApiSupp(object):

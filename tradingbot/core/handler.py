@@ -22,6 +22,7 @@ class Handler(object):
         self.strategy = strategy
         self.api = tradingAPI.API(conf.config['logger_level_api'])
         self.supp = ApiSupp(graph.api)
+        self.poll = graph.poll
         self.graph = graph
         self.stocks = []
         logger.debug("Handler initialized")
@@ -71,7 +72,9 @@ class Handler(object):
         if (isint or insfunds) and self.strategy.get('secondary-prefs'):
             new_prod = self.strategy['secondary-prefs'][prod]
             logger.debug(f"Buying more {new_prod}")
-            unit_value = self.supp.get_unit_value(new_prod)
+            self.poll.add(self.supp.get_unit_value, args=[new_prod])
+            unit_value = self.poll.get(self.supp.get_unit_value,
+                                       args=[new_prod])
             quant = margin // unit_value
             logger.debug(f"{new_prod} {quant} - {margin} : {unit_value}")
             self.api.addMov(

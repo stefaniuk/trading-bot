@@ -15,7 +15,7 @@ from tradingAPI.exceptions import BrowserException
 from ..core import events
 from .color import *
 from .logger import logger
-from .utils import close_to
+from .utils import close_to, CommandPool
 from .stocks import CandlestickStock
 
 
@@ -26,6 +26,7 @@ class Grapher(object):
         self.strategy = strat
         self.monitor = conf.config['monitor']
         self.api = API(conf.config['logger_level_api'])
+        self.poll = CommandPool()
         self.prefs = self.monitor['stocks']
         self.prefs.extend(strat['prefs'])
         self.stocks = []
@@ -74,7 +75,7 @@ class Grapher(object):
     def updatePrice(self):
         """thread function: update price in stocks"""
         while events.LIVE.wait(5):
-            self.api.checkStocks(self.prefs)
+            self.poll.add(self.api.checkStocks, args=[self.prefs])
             time.sleep(1)
 
     def candlestickUpdate(self):
