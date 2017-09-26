@@ -10,6 +10,7 @@ This module provides utility functions that are used within tradinbot.
 
 # from decorator import decorate
 import functools
+from abc import ABCMeta, abstractmethod
 from .logger import logger
 from .data import pip_table
 
@@ -20,6 +21,14 @@ def _get_key(name, dicty):
         return dicty[key[0]]
     else:
         return False
+
+
+def who_closest(target, val1, val2):
+    """choose the closeset of two"""
+    if abs(target - val1) < abs(target - val2):
+        return val1
+    else:
+        return val2
 
 
 def close_to(val1, val2, swap):
@@ -42,64 +51,26 @@ def conv_limit(gain, loss, name):
     return gain, loss
 
 
-# -~- Momoize -~-
-# def _memoize(func, *args, **kw):
-#     if kw:  # frozenset is used to ensure hashability
-#         key = args, frozenset(kw.items())
-#     else:
-#         key = args
-#     cache = func.cache  # attribute added by memoize
-#     if key not in cache:
-#         cache[key] = func(*args, **kw)
-#     return cache[key]
-#
-#
-# def memoize(f):
-#     """
-#     A simple memoize implementation. It works by adding a .cache dictionary
-#     to the decorated function. The cache will grow indefinitely, so it is
-#     your responsibility to clear it, if needed.
-#     """
-#     f.cache = {}
-#     return decorate(f, _memoize)
-
-# class memoize(object):
-#     def __init__(self, func):
-#         self.func = func
-#         self.cache = {}
-#
-#     def __get__(self, obj, objtype):
-#         '''Support instance methods.'''
-#         return functools.partial(self.__call__, obj)
-#
-#     def __call__(self, *args):
-#         if args in self.cache:
-#             return self.cache[args]
-#         else:
-#             value = self.func(*args)
-#             self.cache[args] = value
-#             return value
-
-# -~- Command Pool -~-
-class CommandPool(object):
+# -~- Command Poll -~-
+class CommandPoll(object):
     def __init__(self):
-        self.pool = []
+        self.poll = []
         self.results = []
         self.working = False
 
     def add(self, command, args=[], kwargs={}):
-        self.pool.append([command, args, kwargs])
+        self.poll.append([command, args, kwargs])
         if self.working is False:
             self.work()
 
     def work(self):
         self.working = True
-        while self.pool:
-            for func in self.pool:
+        while self.poll:
+            for func in self.poll:
                 res = func[0](*func[1], **func[2])
                 if res is not None:
                     self.results.append((func, res))
-                self.pool.remove(func)
+                self.poll.remove(func)
         self.working = False
 
     def get(self, command, args=[], kwargs={}):
@@ -134,3 +105,21 @@ class ApiSupp(object):
             finally:
                 self.api.close_mov()
             return margin / quant
+
+
+class Movement(object):
+    def __init__(self, prod, quant=None, gain=None,
+                 loss=None, mode=None, margin=None,
+                 price=None):
+        self.product = prod
+        self.quantity = quant
+        self.mode = mode
+        self.gain = gain
+        self.loss = loss
+        self.margin = margin
+        self.price = price
+
+    def update(self, mov):
+        self.quantity = mov.quantity
+        self.earnings = mov.earn
+        self.id = mov.id

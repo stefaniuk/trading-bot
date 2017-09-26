@@ -12,7 +12,7 @@ import tradingAPI
 from .color import *
 from .logger import logger
 from .stocks import StockAnalysis
-from .utils import conv_limit, ApiSupp
+from .utils import conv_limit, who_closest, ApiSupp, Subject, Movement
 
 
 class Handler(object):
@@ -25,6 +25,7 @@ class Handler(object):
         self.poll = graph.poll
         self.graph = graph
         self.stocks = []
+        self.positions = []
         logger.debug("Handler initialized")
 
     # DEPRECATED
@@ -46,9 +47,34 @@ class Handler(object):
         """stop the handler"""
         self.api.logout()
 
+    def _find_mov(self, prod, quant, price):
+        """find movement by prod, quant and price"""
+        mov_len = len([x for x in self.positions
+                       if x.prod == prod and x.quant == quant])
+        if mov_len == 0:
+            return None
+        elif mov_len == 1:
+            return mov_len[0]
+        elif mov_len > 1:
+            closest_price = 0
+            for mov in mov_len:
+                closest_price = who_closest(price, closest_price, mov.price)
+            return [x for x in mov_len if x.price == closest_price][0]
+
     def update(self):
         """check positions and update"""
         self.api.checkPos()
+        for mov in self.api.movements:
+            movs = [x for x in self.positions if x.id == mov.id]
+            if not movs:
+                mov_fnd = self._find_mov(mov.product, mov.quantity, mov.price)
+                if mov_fnd is None:
+                    mov_fnd = Movement(
+                        mov.product, quant=mov.quantity, mode=mov.mode)
+                    self.positions.append(mov_fnd)
+            else:
+                mov_fnd = movs[0]
+            mov_fnd.update(mov)
 
     def addMov(self, prod, gain, loss, margin, mode="buy"):
         """add a movement (short or long) of a product with stop limit of pip
@@ -65,6 +91,9 @@ class Handler(object):
         logger.debug(f"free funds: {free_funds}")
         result = self.api.addMov(
             prod, mode=mode, stop_limit=stop_limit, auto_quantity=margin)
+        self.positions.append(
+            Movement(prod, gain=gain, loss=loss, mode=mode,
+                     margin=margin, price=price))
         isint = isinstance(0.0, type(result))
         if isint:
             margin -= result
@@ -81,6 +110,9 @@ class Handler(object):
                 self.api.addMov(
                     new_prod, quantity=quant, mode=mode, stop_limit=stop_limit,
                     name_counter=prod)
+                self.positions.append(
+                    Movement(new_prod, quant=quant, gain=gain, loss=loss,
+                             mode=mode, margin=margin, price=price))
 
     def closeMov(self, product, quantity=None, price=None):
         """close a movement by name and quantity (or price).
