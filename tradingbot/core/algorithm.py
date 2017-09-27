@@ -206,7 +206,7 @@ class Scalper(BaseAlgorithm):
             if time < 0:
                 for x in self.stocks:
                     if self.worth(x):
-                        self.handler.addMov(x.name, 30, 10,
+                        self.handler.addMov(x.name, 12, 4,
                                             x.margin, mode=x.mode)
             while self.graph.count == old_stock_n:
                 if events.LIVE.is_set():

@@ -8,11 +8,14 @@ This module provides handler object that manipulates
 real account and place movements.
 """
 
+import time
 import tradingAPI
+from threading import Thread
 from .color import *
 from .logger import logger
 from .stocks import StockAnalysis
-from .utils import conv_limit, who_closest, ApiSupp, Subject, Movement
+from .utils import conv_limit, who_closest, ApiSupp, Movement, CommandPool
+from ..core import events
 
 
 class Handler(object):
@@ -22,7 +25,7 @@ class Handler(object):
         self.strategy = strategy
         self.api = tradingAPI.API(conf.config['logger_level_api'])
         self.supp = ApiSupp(graph.api)
-        self.poll = graph.poll
+        self.pool = CommandPool()
         self.graph = graph
         self.stocks = []
         self.positions = []
@@ -42,20 +45,26 @@ class Handler(object):
         if not self.api.login(creds['username'], creds['password']):
             logger.critical("hanlder failed to start")
             self.stop()
+        self.start_handlePos()
+        logger.debug("Thread #3 launched - handlePos updater")
+        events.POSHANDLER.set()
 
     def stop(self):
         """stop the handler"""
+        events.POSHANDLER.clear()
         self.api.logout()
 
-    def _find_mov(self, prod, quant, price):
-        """find movement by prod, quant and price"""
-        mov_len = len([x for x in self.positions
-                       if x.prod == prod and x.quant == quant])
-        if mov_len == 0:
+    def _find_mov(self, prod, price):
+        """find movement by prod and price"""
+        mov_len = [x for x in self.positions
+                   if x.product == prod]
+        if len(mov_len) == 0:
             return None
-        elif mov_len == 1:
+            logger.debug("hanlder._find_mov returned None")
+            logger.debug(f"handler._find_mov:product: prod")
+        elif len(mov_len) == 1:
             return mov_len[0]
-        elif mov_len > 1:
+        elif len(mov_len) > 1:
             closest_price = 0
             for mov in mov_len:
                 closest_price = who_closest(price, closest_price, mov.price)
@@ -63,18 +72,45 @@ class Handler(object):
 
     def update(self):
         """check positions and update"""
-        self.api.checkPos()
+        self.pool.add_and_wait_single(self.api.checkPos)
         for mov in self.api.movements:
             movs = [x for x in self.positions if x.id == mov.id]
             if not movs:
-                mov_fnd = self._find_mov(mov.product, mov.quantity, mov.price)
+                mov_fnd = self._find_mov(mov.product, mov.price)
                 if mov_fnd is None:
-                    mov_fnd = Movement(
-                        mov.product, quant=mov.quantity, mode=mov.mode)
-                    self.positions.append(mov_fnd)
+                    logger.debug(
+                        f"movement not hanlded by bot {mov.product}")
+                    continue
             else:
                 mov_fnd = movs[0]
             mov_fnd.update(mov)
+        logger.debug("updated positions")
+
+    def checkMovs(self):
+        pos_list = [x for x in self.positions
+                    if x.gain is not None or x.loss is not None
+                    and hasattr(x, 'curr')]
+        for pos in pos_list:
+            if (pos.curr < pos.price - pos.loss or
+                    pos.curr > pos.price + pos.gain):
+                logger.info(f"{red('closing')} {bold(pos.product)}" +
+                            f" at {bold(pos.curr)} with a revenue of" +
+                            f" {bold(green(pos.earnings))}")
+                self.pool.add_and_wait(self.api.closeMov, args=[pos.id])
+
+    def handlePos(self):
+        """postition handler"""
+        while len(self.positions) == 0:
+            time.sleep(1)
+        while events.POSHANDLER.wait(5):
+            self.update()
+            self.checkMovs()
+
+    def start_handlePos(self):
+        """start the hanlder"""
+        T3 = Thread(target=self.handlePos)
+        T3.daemon = True
+        T3.start()
 
     def addMov(self, prod, gain, loss, margin, mode="buy"):
         """add a movement (short or long) of a product with stop limit of pip
@@ -87,50 +123,37 @@ class Handler(object):
         stock = [x for x in self.stocks if x.name == prod][0]
         gain, loss = conv_limit(gain, loss, stock.name)
         stop_limit = {'mode': 'unit', 'value': (gain, loss)}
-        free_funds = self.api.get_bottom_info('free_funds')
+        free_funds = self.pool.add_and_wait(self.api.get_bottom_info,
+                                            args=['free_funds'])
         logger.debug(f"free funds: {free_funds}")
-        result = self.api.addMov(
-            prod, mode=mode, stop_limit=stop_limit, auto_quantity=margin)
-        self.positions.append(
-            Movement(prod, gain=gain, loss=loss, mode=mode,
-                     margin=margin, price=price))
-        isint = isinstance(0.0, type(result))
+        mov_results = self.pool.add_and_wait(
+            self.api.addMov,
+            args=[prod], kwargs={'mode': mode, 'stop_limit': stop_limit,
+                                 'auto_quantity': margin})
+        isint = isinstance({}, type(mov_results))
         if isint:
-            margin -= result
-        insfunds = result == 'INSFU'
-        if (isint or insfunds) and self.strategy.get('secondary-prefs'):
-            if self.strategy['secondary-prefs'].get(prod):
-                new_prod = self.strategy['secondary-prefs'][prod]
-                logger.debug(f"Buying more {new_prod}")
-                self.poll.add(self.supp.get_unit_value, args=[new_prod])
-                unit_value = self.poll.get(self.supp.get_unit_value,
-                                           args=[new_prod])
-                quant = margin // unit_value
-                logger.debug(f"{new_prod} {quant} - {margin} : {unit_value}")
-                self.api.addMov(
-                    new_prod, quantity=quant, mode=mode, stop_limit=stop_limit,
-                    name_counter=prod)
-                self.positions.append(
-                    Movement(new_prod, quant=quant, gain=gain, loss=loss,
-                             mode=mode, margin=margin, price=price))
-
-    def closeMov(self, product, quantity=None, price=None):
-        """close a movement by name and quantity (or price).
-         Needs an upgrade"""
-        self.update()
-        mvs = [x for x in self.api.movements if x.product == product]
-        if quantity is not None:
-            mvs = [x for x in movs if x.quantity == quantity]
-        if price is not None:
-            mvs = [x for x in movs if x.price == price]
-        count = 0
-        earn = 0
-        for x in mvs:
-            if self.api.closeMov(x.id):
-                count += 1
-                earn += x.earn
-        logger.info(f"closed {bold(count)} movements of {bold(product)} " +
-                    f"with a revenue of {bold(green(earn))}")
+            self.positions.append(
+                Movement(mov_results['name'], gain=gain, loss=loss, mode=mode,
+                         margin=margin, price=price))
+            marg_used = mov_results['margin']
+            margin -= marg_used
+        insfunds = mov_results == 'INSFU'
+        # if (isint or insfunds) and self.strategy.get('secondary-prefs'):
+        #     if self.strategy['secondary-prefs'].get(prod):
+        #         new_prod = self.strategy['secondary-prefs'][prod]
+        #         logger.debug(f"Buying more {new_prod}")
+        #         unit_value = self.pool.add_and_wait(self.supp.get_unit_value,
+        #                                             args=[new_prod])
+        #         quant = margin // unit_value
+        #         logger.debug(f"{new_prod} {quant} - {margin} : {unit_value}")
+        #         new_mov_results = self.pool.add_and_wait(
+        #             self.api.addMov,
+        #             args=[new_prod], kwargs={'quantity': quant, 'mode': mode,
+        #                                      'stop_limit': stop_limit,
+        #                                      'name_counter': prod})
+        #         self.positions.append(
+        #             Movement(new_mov_results['name'], quant=quant, gain=gain,
+        #                      loss=loss, mode=mode, margin=margin, price=price))
 
     def closeAll(self):
         """close all movements"""

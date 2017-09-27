@@ -64,7 +64,8 @@ class PredictStockScalping(PredictStock):
             return True
 
     def mom_up(self):
-        self._check_mom()
+        if not self._check_mom():
+            return False
         if self.momentum[-2] <= 20 < self.momentum[-1]:
             return True
         else:

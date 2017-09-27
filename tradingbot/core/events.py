@@ -25,3 +25,4 @@ class BotEvent(threading.Event):
 
 
 LIVE = BotEvent()
+POSHANDLER = BotEvent()

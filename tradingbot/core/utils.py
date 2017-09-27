@@ -9,8 +9,10 @@ This module provides utility functions that are used within tradinbot.
 """
 
 # from decorator import decorate
+import time
 import functools
 from abc import ABCMeta, abstractmethod
+from threading import Thread
 from .logger import logger
 from .data import pip_table
 
@@ -51,26 +53,51 @@ def conv_limit(gain, loss, name):
     return gain, loss
 
 
-# -~- Command Poll -~-
-class CommandPoll(object):
+# -~- Command Pool -~-
+class CommandPool(object):
     def __init__(self):
-        self.poll = []
+        self.pool = []
         self.results = []
         self.working = False
 
+    def check_add(self, command, args=[], kwargs={}):
+        cmd = [command, args, kwargs]
+        if cmd in self.pool:
+            return False
+        else:
+            self.add(command, args, kwargs)
+            return False
+
     def add(self, command, args=[], kwargs={}):
-        self.poll.append([command, args, kwargs])
+        self.pool.append([command, args, kwargs])
         if self.working is False:
-            self.work()
+            Thread(target=self.work).start()
+
+    def wait(self, command, args=[], kwargs={}, timeout=30):
+        for _ in range(timeout):
+            try:
+                return self.get(command, args, kwargs)
+            except Exception as e:
+                exc = e
+                time.sleep(1)
+        raise exc
+
+    def add_and_wait_single(self, command, args=[], kwargs={}, timeout=30):
+        self.check_add(command, args, kwargs)
+        return self.wait(command, args, kwargs, timeout)
+
+    def add_and_wait(self, command, args=[], kwargs={}, timeout=30):
+        self.add(command, args, kwargs)
+        return self.wait(command, args, kwargs, timeout)
 
     def work(self):
         self.working = True
-        while self.poll:
-            for func in self.poll:
+        while self.pool:
+            for func in self.pool:
                 res = func[0](*func[1], **func[2])
                 if res is not None:
                     self.results.append((func, res))
-                self.poll.remove(func)
+                self.pool.remove(func)
         self.working = False
 
     def get(self, command, args=[], kwargs={}):
@@ -118,8 +145,11 @@ class Movement(object):
         self.loss = loss
         self.margin = margin
         self.price = price
+        self.id = None
 
     def update(self, mov):
+        self.curr = mov.curr
+        self.price = mov.price
         self.quantity = mov.quantity
         self.earnings = mov.earn
         self.id = mov.id
