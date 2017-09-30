@@ -100,9 +100,9 @@ class Handler(object):
 
     def handlePos(self):
         """postition handler"""
-        while len(self.positions) == 0:
-            time.sleep(1)
         while events.POSHANDLER.wait(5):
+            while len(self.positions) == 0:
+                time.sleep(1)
             self.update()
             self.checkMovs()
 
