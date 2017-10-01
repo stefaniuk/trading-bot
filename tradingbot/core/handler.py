@@ -14,7 +14,8 @@ from threading import Thread
 from .color import *
 from .logger import logger
 from .stocks import StockAnalysis
-from .utils import conv_limit, who_closest, ApiSupp, Movement, CommandPool
+from .utils import (conv_limit, who_closest, ApiSupp, Movement,
+                    CommandPool, eval_earn)
 from ..core import events
 
 
@@ -91,11 +92,13 @@ class Handler(object):
                     if x.gain is not None or x.loss is not None
                     and hasattr(x, 'curr')]
         for pos in pos_list:
-            if (pos.curr < pos.price - pos.loss or
-                    pos.curr > pos.price + pos.gain):
-                logger.info(f"{red('closing')} {bold(pos.product)}" +
-                            f" at {bold(pos.curr)} with a revenue of" +
-                            f" {bold(green(pos.earnings))}")
+            logger.debug(f"{pos.product} gain: {pos.gain} - loss: {pos.loss}")
+            if (pos.curr <= pos.price - pos.loss or
+                    pos.curr >= pos.price + pos.gain):
+                earnings = eval_earn(pos.quantity, pos.curr, pos.price)
+                logger.info(f"{red('closing')} {bold(pos.product)} " +
+                            f"at {bold(pos.curr)} with a revenue of " +
+                            f"{bold(earnings)}")
                 if self.pool.add_and_wait(self.api.closeMov, args=[pos.id]):
                     self.positions.remove(pos)
 

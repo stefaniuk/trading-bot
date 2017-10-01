@@ -13,6 +13,7 @@ import time
 import functools
 from abc import ABCMeta, abstractmethod
 from threading import Thread
+from .color import *
 from .logger import logger
 from .data import pip_table
 
@@ -52,6 +53,17 @@ def conv_limit(gain, loss, name):
     loss *= pip
     return gain, loss
 
+
+def eval_earn(quant, curr, price):
+    """evaluate earnings"""
+    diff = curr - price
+    earnings = str(round(diff * quant, 2))
+    if diff > 0:
+        return green(earnings)
+    elif diff < 0:
+        return red(earnings)
+    else:
+        return earnings
 
 # -~- Command Pool -~-
 class CommandPool(object):
@@ -151,5 +163,4 @@ class Movement(object):
         self.curr = mov.curr
         self.price = mov.price
         self.quantity = mov.quantity
-        self.earnings = mov.earn
         self.id = mov.id
