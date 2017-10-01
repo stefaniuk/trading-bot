@@ -94,7 +94,8 @@ class Handler(object):
             logger.info(f"{red('closing')} {bold(pos.product)}" +
                         f" at {bold(pos.curr)} with a revenue of" +
                         f" {bold(green(pos.earnings))}")
-            self.pool.add_and_wait(self.api.closeMov, args=[pos.id])
+            if self.pool.add_and_wait(self.api.closeMov, args=[pos.id]):
+                self.positions.remove(pos)
 
     def handlePos(self):
         """postition handler"""
