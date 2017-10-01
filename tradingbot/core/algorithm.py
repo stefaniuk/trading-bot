@@ -224,6 +224,10 @@ class Scalper(BaseAlgorithm):
             if buy:
                 self.handler.addMov('EUR/USD zero', 12, 4,
                                     200, mode='buy')
+                self.handler.addMov('EUR/USD zero', 12, 4,
+                                    200, mode='buy')
+                self.handler.addMov('USD/JPY zero', 12, 4,
+                                    200, mode='buy')
                 buy = False
             while self.graph.count == old_stock_n:
                 if events.LIVE.is_set():
