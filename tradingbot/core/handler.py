@@ -91,11 +91,13 @@ class Handler(object):
                     if x.gain is not None or x.loss is not None
                     and hasattr(x, 'curr')]
         for pos in pos_list:
-            logger.info(f"{red('closing')} {bold(pos.product)}" +
-                        f" at {bold(pos.curr)} with a revenue of" +
-                        f" {bold(green(pos.earnings))}")
-            if self.pool.add_and_wait(self.api.closeMov, args=[pos.id]):
-                self.positions.remove(pos)
+            if (pos.curr < pos.price - pos.loss or
+                    pos.curr > pos.price + pos.gain):
+                logger.info(f"{red('closing')} {bold(pos.product)}" +
+                            f" at {bold(pos.curr)} with a revenue of" +
+                            f" {bold(green(pos.earnings))}")
+                if self.pool.add_and_wait(self.api.closeMov, args=[pos.id]):
+                    self.positions.remove(pos)
 
     def handlePos(self):
         """postition handler"""

@@ -70,7 +70,7 @@ class CommandPool(object):
 
     def add(self, command, args=[], kwargs={}):
         self.pool.append([command, args, kwargs])
-        if not self.working:
+        if self.working is False:
             Thread(target=self.work).start()
 
     def wait(self, command, args=[], kwargs={}, timeout=30):
@@ -95,7 +95,8 @@ class CommandPool(object):
         while self.pool:
             for func in self.pool:
                 res = func[0](*func[1], **func[2])
-                self.results.append((func, res))
+                if res is not None:
+                    self.results.append((func, res))
                 self.pool.remove(func)
         self.working = False
 
