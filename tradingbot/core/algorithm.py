@@ -199,17 +199,35 @@ class Scalper(BaseAlgorithm):
 
     def run(self, time=1):
         """main run function, here it is the pivot of the algorithm"""
+        # while events.LIVE.wait(5):
+        #     old_stock_n = self.graph.count
+        #     self.work()
+        #     time -= 1
+        #     if time < 0:
+        #         for x in self.stocks:
+        #             if self.worth(x):
+        #                 self.handler.addMov(x.name, 12, 4,
+        #                                     x.margin, mode=x.mode)
+        #     while self.graph.count == old_stock_n:
+        #         if events.LIVE.is_set():
+        #             events.LIVE.wait_terminate(1)
+        #         else:
+        #             break
+        #
+        # >>>>>>>>>>> DEBUG >>>>>>>>>>>
+        buy = True
         while events.LIVE.wait(5):
             old_stock_n = self.graph.count
             self.work()
-            time -= 1
-            if time < 0:
-                for x in self.stocks:
-                    if self.worth(x):
-                        self.handler.addMov(x.name, 12, 4,
-                                            x.margin, mode=x.mode)
+            name_mov_list = [x.name for x in self.stocks]
+            logger.debug(f"{', '.join(name_mov_list)}")
+            if buy:
+                self.handler.addMov('EUR/USD zero', 12, 4,
+                                    200, mode='buy')
+                buy = False
             while self.graph.count == old_stock_n:
                 if events.LIVE.is_set():
                     events.LIVE.wait_terminate(1)
                 else:
                     break
+        # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<
