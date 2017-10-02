@@ -96,10 +96,12 @@ class Handler(object):
             if pos.mode == 'buy':
                 mode = (pos.curr <= pos.price - pos.loss or
                         pos.curr >= pos.price + pos.gain)
-            else:
+            elif pos.mode == 'sell':
                 mode = (pos.curr >= pos.price + pos.loss or
                         pos.curr <= pos.price - pos.gain)
             if mode:
+                logger.debug(f"mode: {pos.mode}, curr: {pos.curr}, " +
+                             f"price: {pos.price}")
                 earnings = eval_earn(pos.quantity, pos.curr,
                                      pos.price, pos.mode)
                 logger.info(f"{blue('closing')} {bold(pos.product)} " +
