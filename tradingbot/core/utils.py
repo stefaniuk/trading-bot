@@ -54,9 +54,12 @@ def conv_limit(gain, loss, name):
     return gain, loss
 
 
-def eval_earn(quant, curr, price):
+def eval_earn(quant, curr, price, mode):
     """evaluate earnings"""
-    diff = curr - price
+    if mode == 'buy':
+        diff = curr - price
+    else:
+        diff = price - curr
     earnings = str(round(diff * quant, 2))
     if diff > 0:
         return green(earnings)
@@ -64,6 +67,7 @@ def eval_earn(quant, curr, price):
         return red(earnings)
     else:
         return earnings
+
 
 # -~- Command Pool -~-
 class CommandPool(object):

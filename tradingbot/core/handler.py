@@ -93,10 +93,16 @@ class Handler(object):
                     and hasattr(x, 'curr')]
         for pos in pos_list:
             logger.debug(f"{pos.product} gain: {pos.gain} - loss: {pos.loss}")
-            if (pos.curr <= pos.price - pos.loss or
-                    pos.curr >= pos.price + pos.gain):
-                earnings = eval_earn(pos.quantity, pos.curr, pos.price)
-                logger.info(f"{red('closing')} {bold(pos.product)} " +
+            if pos.mode == 'buy':
+                mode = (pos.curr <= pos.price - pos.loss or
+                        pos.curr >= pos.price + pos.gain)
+            else:
+                mode = (pos.curr >= pos.price + pos.loss or
+                        pos.curr <= pos.price - pos.gain)
+            if mode:
+                earnings = eval_earn(pos.quantity, pos.curr,
+                                     pos.price, pos.mode)
+                logger.info(f"{blue('closing')} {bold(pos.product)} " +
                             f"at {bold(pos.curr)} with a revenue of " +
                             f"{bold(earnings)}")
                 if self.pool.add_and_wait(self.api.closeMov, args=[pos.id]):
