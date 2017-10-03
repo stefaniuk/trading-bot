@@ -6,7 +6,7 @@ RUN apt-get -qq update
 RUN apt-get -y install wget curl
 RUN apt-get -y install vim nano unzip
 ################## BEGIN INSTALLATION ######################
-RUN apt-get -y firefox
+RUN apt-get -y install firefox
 RUN apt-get -y install xvfb
 # GECKODRIVER #
 RUN wget https://github.com/mozilla/geckodriver/releases/download/v0.18.0/geckodriver-v0.18.0-linux64.tar.gz
@@ -42,11 +42,11 @@ RUN git clone https://github.com/federico123579/Trading212-API.git trading-api
 RUN git clone https://github.com/federico123579/trading-bot.git trading-bot
 WORKDIR /home/trading-api
 RUN git checkout testing
-RUN pip3.6 install .
+RUN pip3.6 install -e .
 WORKDIR /home/trading-bot
 RUN git checkout factory
 RUN pip3.6 install wheel
 RUN pip3.6 install -r dev-requirements.txt
-RUN pip3.6 install .
+RUN pip3.6 install -e .
 WORKDIR /home
 ###############
