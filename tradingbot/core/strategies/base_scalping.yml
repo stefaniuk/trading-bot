@@ -5,6 +5,10 @@
 max_trans: 10
 max_margin_risk: 0.65
 
+#stop_limit
+gain_limit: 12
+loss_limit: 4
+
 # stop-loss
 swap: 0.1
 stop_limit: 0.1

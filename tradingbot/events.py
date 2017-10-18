@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 """
-tradingbot.core.events
+tradingbot.events
 ~~~~~~~~~~~~~~
 
 This module provides events and signals for threading module.
@@ -22,7 +22,3 @@ class BotEvent(threading.Event):
                 time.sleep(1)
             else:
                 return False
-
-
-LIVE = BotEvent()
-POSHANDLER = BotEvent()

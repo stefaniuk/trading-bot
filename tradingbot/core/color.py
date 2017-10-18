@@ -3,7 +3,6 @@
 """
 tradingbot.core.color
 ~~~~~~~~~~~~~~
-
 This module provides color functions.
 """
 

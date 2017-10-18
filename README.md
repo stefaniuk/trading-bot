@@ -68,7 +68,7 @@ docker run --name tradingbot_instance -it tradingbot
 
 The Semantic Versioning is used in this repository in this format:
 
-    [major].[minor].[patch]-{status}
+    [major].[minor].[patch]{status}
 
 * **major** indicates incopatible changes
 * **minor** indicates new features

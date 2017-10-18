@@ -9,7 +9,7 @@ setup(
         'pyyaml'
     ],
     include_package_data=True,
-    package_data={'': ['*.conf'], 'tradingbot.core': ['strategies/*.yml']},
+    package_data={'': ['*.conf', 'logs/.null.ini'], 'tradingbot.core': ['strategies/*.yml']},
     zip_safe=False,
     author="Federico Lolli",
     author_email="federico123579@gmail.com",

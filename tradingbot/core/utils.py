@@ -1,4 +1,3 @@
-
 # -*- coding: utf-8 -*-
 
 """
@@ -14,7 +13,6 @@ import functools
 from abc import ABCMeta, abstractmethod
 from threading import Thread
 from .color import *
-from .logger import logger
 from .data import pip_table
 
 
@@ -32,14 +30,6 @@ def who_closest(target, val1, val2):
         return val1
     else:
         return val2
-
-
-def close_to(val1, val2, swap):
-    """check if val1 is around val2 by swap"""
-    if val2 - swap < val1 and val1 < val2 + swap:
-        return True
-    else:
-        return False
 
 
 def conv_limit(gain, loss, name):
@@ -124,30 +114,6 @@ class CommandPool(object):
             return res[1]
         except Exception:
             raise
-
-
-# -~- API supplements -~-
-class ApiSupp(object):
-    def __init__(self, api):
-        self.api = api
-
-    @functools.lru_cache()
-    def get_unit_value(self, name):
-        """get unit value of stock based on margin"""
-        if self.api.open_mov(name):
-            try:
-                pip = _get_key(name, pip_table)
-                if pip is False:
-                    raise
-                quant = 1 / pip
-                self.api.set_quantity(quant)
-                margin = self.api.get_mov_margin()
-            except Exception:
-                logger.error(f"failed to get margin of {name}")
-                raise
-            finally:
-                self.api.close_mov()
-            return margin / quant
 
 
 class Movement(object):

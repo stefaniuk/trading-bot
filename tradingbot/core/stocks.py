@@ -7,79 +7,63 @@ tradingbot.core.stocks
 This module provides stocks objects.
 """
 
+import abc
+from ..patterns import Observable
+
 
 class BaseStock(object):
-    def __init__(self, name):
-        self.name = name
+    """abstract class for stock"""
+    def __init__(self, product):
+        self.product = product
         self.records = []
 
-    def _clear(self, value):
+    def clear(self, value):
+        """to avoid memory overload"""
         self.records = self.records[-value:]
 
 
 class CandlestickStock(BaseStock):
-    def __init__(self, name):
-        super().__init__(name)
+    """stock for data storing"""
+    def __init__(self, stock):
+        super().__init__(stock.product)
+        self.stock = stock
         self.sentiment = None
 
-    def addRecord(self, openstock, maxstock, minstock, closestock):
-        self.records.append([openstock, maxstock, minstock, closestock])
-        self._clear(250)
+    def add_rec(self, sl_op, sl_mx, sl_mn, sl_cl, by_op, by_mx, by_mn, by_cl):
+        """add value to records"""
+        self.records.append(
+            [[sl_op, sl_mx, sl_mn, sl_cl], [by_op, by_mx, by_mn, by_cl]])
+        self.clear(250)
+
+    def get_last_prices(self, n, mode='buy', value='close'):
+        """get the latest prices"""
+        # handle errors
+        if not isinstance(n, type(0)):
+            raise ValueError("n has to be int")
+        conv_list = {'buy': 1, 'sell': 0}
+        if mode not in conv_list.keys():
+            raise ValueError("Mode can only be buy or sell")
+        price_conv = ['open', 'max', 'min', 'close']
+        if value not in price_conv:
+            raise ValueError("Mode can only be open, max, min or close")
+        price_list = [x[conv_list[mode]][price_conv.index(value)]
+                      for x in self.records]
+        return price_list[-n:]
 
 
-class PredictStock(BaseStock):
+class PredictStock(BaseStock, Observable, metaclass=abc.ABCMeta):
+    """abstract for predict stock"""
     def __init__(self, candlestick):
-        super().__init__(candlestick.name)
-        self.candlestick = candlestick
-        self.prediction = 0
+        BaseStock.__init__(self, candlestick.product)
+        Observable.__init__(self)
+        self.candle = candlestick
 
-    # DEPRECATED
-    # def add(self, val):
-    #     self.prediction += (val * (1 - self.prediction))
-    #
-    # def multiply(self, val):
-    #     self.prediction *= val
-    #     if self.prediction > 1:
-    #         self.prediction = 1
+    @abc.abstractmethod
+    def trigger(self):
+        """trigger the observer if actioned by conditions"""
 
 
-class PredictStockScalping(PredictStock):
-    def __init__(self, candlestick):
-        super().__init__(candlestick)
-        self.momentum = []
-        self.k_fast_list = []
-        self.k_list = []
-
-    def clear(self):
-        self.momentum = self.momentum[-2:]
-        self.k_fast_list = self.k_fast_list[-3:]
-        self.k_list = self.k_list[-3:]
-
-    def _check_mom(self):
-        if not isinstance(self.momentum, type(0.0)):
-            return False
-        elif len(self.momentum) < 2:
-            return False
-        else:
-            return True
-
-    def mom_up(self):
-        if not self._check_mom():
-            return False
-        if self.momentum[-2] <= 20 < self.momentum[-1]:
-            return True
-        else:
-            return False
-
-    def mom_down(self):
-        self._check_mom()
-        if self.momentum[-2] >= 80 > self.momentum[-1]:
-            return True
-        else:
-            return False
-
-
-class StockAnalysis(object):
-    def __init__(self, name):
-        self.name = name
-        self.volatility = None
+# class StockAnalysis(object):
+#     def __init__(self, product):
+#         self.product = product
+#         self.volatility = None

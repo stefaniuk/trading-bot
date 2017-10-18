@@ -1,34 +1,61 @@
 """
-tradingbot.core.configurer
+tradingbot.configurer
 ~~~~~~~~~~~~~~
 
 This module provides a Configurer class.
 """
 
+import os
 import os.path
 import yaml
+from .patterns import Observer, Observable, Singleton
+# logging
+import logging
+logger = logging.getLogger('tradingbot.Configurer')
 
 
-class Configurer(object):
-    def __init__(self, path):
+class Configurer(Observable):
+    """provides configuration data"""
+    def __init__(self, path, name):
+        super().__init__()
+        self.name = name
         self.config_file = path
         self.config = {}
 
-    def __repr__(self):
+    def read(self):
+        self.checkFile()
+        with open(self.config_file, 'r') as f:
+            yaml_dict = yaml.load(f)
+            logger.debug('yaml file found')
+            if yaml_dict is not None:
+                self.config = yaml_dict
+        self.notify_observers(event='update', data=self.config)
         return self.config
 
-    def read(self):
-        with open(self.config_file, 'r') as f:
-            self.config = yaml.load(f)
-
     def save(self):
+        self.checkFile()
         if not self.config:
-            raise Exception("nothing to save (config not exists)")
+            logger.error("nothing to save (config not exists)")
+            raise NotImplemented()
         with open(self.config_file, 'w') as f:
             f.write(yaml.dump(self.config))
+        logger.debug("saved data")
 
     def checkFile(self):
-        if os.path.isfile(self.config_file):
-            return 1
-        else:
-            return 0
+        if not os.path.isfile(self.config_file):
+            directory = os.path.dirname(self.config_file)
+            if not os.path.exists(directory):
+                os.makedirs(directory)
+            with open(self.config_file, 'w') as f:
+                pass
+
+
+class Collector(Observer, metaclass=Singleton):
+    """collect all data"""
+    def __init__(self):
+        self.collection = {}
+
+    def notify(self, observable, event, data):
+        if event == 'update' and isinstance(data, type({})):
+            logger.debug("observer notified")
+            self.collection[observable.name] = data
