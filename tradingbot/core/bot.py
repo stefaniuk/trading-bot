@@ -9,6 +9,7 @@ This module control everything.
 
 import time
 import sys
+from threading import Thread
 from ..core import cli
 from ..glob import Glob
 from .recorder import Recorder
@@ -46,10 +47,18 @@ class Bot(object):
         # initialize base components
         Glob().recorder = Recorder()
         Glob().handler = Handler()
+        # init recorder and handlers
+        T3 = Thread(target=Glob().recorder.start)
+        T4 = Thread(target=Glob().handler.start)
+        T3.start()
+        T4.start()
+        T3.join()
+        time.sleep(65)
+        T4.join()
         # initialize algorithms
         self.scalper = Scalper()
         # start algos
-        self.scalper.start()
+        self.scalper.start(self.options.wait)
 
     def stop(self):
         """stop the bot"""

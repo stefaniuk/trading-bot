@@ -55,6 +55,20 @@ class Handler(object):
             kwargs={'api': self.api, 'name': product}, timeout=100)
         return pip
 
+    def update(self):
+        """check positions and update"""
+        self.pool.add_and_wait_single(self.api.checkPos)
+        # update positions
+        self.positions.clear()
+        for pos in self.api.positions:
+            if not hasattr(pos, 'mov'):
+                logger.debug("position not handler by handler")
+                continue
+            if not hasattr(pos, 'stop_limit'):
+                logger.debug("position has not stop_limit")
+                continue
+            self.positions.append(pos)
+
     # def _find_mov(self, prod, price):
     #     """find movement by prod and price"""
     #     mov_len = [x for x in self.positions

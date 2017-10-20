@@ -1,6 +1,10 @@
 # Scalping
 # ========
 
+# stochastic oscillator
+overbought: 80
+oversold: 20
+
 # margin
 max_trans: 10
 max_margin_risk: 0.65
@@ -8,6 +12,7 @@ max_margin_risk: 0.65
 #stop_limit
 gain_limit: 12
 loss_limit: 4
+auto_limit: 60
 
 # stop-loss
 swap: 0.1

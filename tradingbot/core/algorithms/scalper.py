@@ -21,15 +21,13 @@ class PredictStockScalper(PredictStock):
     """predict stock for scalping algorithm"""
     def __init__(self, candlestick):
         super().__init__(candlestick)
+        self.overbought = Glob().collection['strategy']['overbought']
+        self.oversold = Glob().collection['strategy']['oversold']
         self.momentum = []
-        self.k_fast_list = []
-        self.k_list = []
 
     def clear(self):
         """avoid memory overlaod"""
         self.momentum = self.momentum[-2:]
-        self.k_fast_list = self.k_fast_list[-3:]
-        self.k_list = self.k_list[-3:]
 
     def _check_mom(self):
         """check if it's possible to evaluate momentum"""
@@ -44,7 +42,7 @@ class PredictStockScalper(PredictStock):
         """check if momentum is up"""
         if not self._check_mom():
             return False
-        if self.momentum[-2] <= 20 < self.momentum[-1]:
+        if self.momentum[-2] <= self.oversold < self.momentum[-1]:
             return True
         else:
             return False
@@ -52,7 +50,7 @@ class PredictStockScalper(PredictStock):
     def mom_down(self):
         """check if momentum is down"""
         self._check_mom()
-        if self.momentum[-2] >= 80 > self.momentum[-1]:
+        if self.momentum[-2] >= self.overbought > self.momentum[-1]:
             return True
         else:
             return False
@@ -61,8 +59,9 @@ class PredictStockScalper(PredictStock):
         """define gain or loss limit based on last activity"""
         strat_gain = Glob().collection['strategy']['gain_limit']
         strat_loss = Glob().collection['strategy']['loss_limit']
-        mx = max(self.candle.get_last_prices(20, value='max'))
-        mn = min(self.candle.get_last_prices(20, value='min'))
+        conf_limit = Glob().collection['strategy']['auto_limit']
+        mx = max(self.candle.get_last_prices(conf_limit, value='max'))
+        mn = min(self.candle.get_last_prices(conf_limit, value='min'))
         # get the corrected value of limits
         pip = Glob().handler.get_pip(self.product)
         gain = strat_gain * pip
@@ -89,19 +88,17 @@ class PredictStockScalper(PredictStock):
 
     def trigger(self):
         # get the buy price conventionally
-        price = self.candle.stock.records[-1][1]
-        if (self.ema_50 > self.ema_100 and
-                price < self.ema_100 and self.mom_up()):
+        # price = self.candle.stock.records[-1][1]
+        # removed "price < self.ema_100"
+        if (self.ema_50 > self.ema_100 and self.mom_up()):
             gain, loss = self.auto_limit()
-            self.mode = 'buy'
             logger.info("It's profitable to buy %s" % self.product)
             # notify observer
             self.notify_observers(
                 event='buy', data={'gain': gain, 'loss': loss})
-        elif (self.ema_50 < self.ema_100 and
-              price > self.ema_100 and self.mom_down()):
+        # removed "price > self.ema_100"
+        elif (self.ema_50 < self.ema_100 and self.mom_down()):
             gain, loss = self.auto_limit()
-            self.mode = 'sell'
             logger.info("It's profitable to sell %s" % self.product)
             # notify observer
             self.notify_observers(
@@ -137,8 +134,7 @@ class Scalper(BaseAlgorithm):
             # get the last price (use the buy price conventionally)
             price = pred_stock.candle.stock.records[-1][1]
             try:
-                momentum = pred_stock.calculator.stochastic_oscillator_5_3_3(
-                    pred_stock.k_fast_list, pred_stock.k_list)
+                momentum = pred_stock.calculator.stochastic_oscillator(5, 3, 3)
             # catch highest price equals to lowest
             except ZeroDivisionError:
                 logger.warning("momentum: highest price equal to lowest price")

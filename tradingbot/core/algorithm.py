@@ -24,47 +24,53 @@ class Calculator(object):
     """namespace for complex predictive functions (buy conventionally)"""
     def __init__(self, p_stock):
         self.product = p_stock.product
-        self.stock = [x for x in Glob().recorder.stocks
-                      if x.product == self.product][0]
-        self.emas = []
+        self.stock = p_stock.candle
+        self.k_fast_list = []
+        self.k_list = []
+        self.emas = {}
 
     def _clear(self):
         """avoid memory overload"""
-        self.emas = self.emas[:50]
+        for key in self.emas.keys():
+            self.emas[key] = self.emas[key][-50:]
 
-    def sma(self, periods, unit=1):
+    def sma(self, periods):
         """calculate the Simple Moving Average"""
-        periods *= unit
         records = self.stock.records
         close_list = [x[1][-1] for x in records[-periods:]]
         return sum(close_list) / len(close_list)
 
-    def ema(self, periods, unit=1):
+    def ema(self, periods):
         """calculate the Exponential Moving Average"""
+        # instantiate ema of given period in self.emas
+        if periods not in self.emas.keys():
+            self.emas[periods] = []
         records = self.stock.records
         close = records[-1][1][-1]
         multiplier = 2 / (periods + 1)
-        if len(self.emas) == 0:
+        if len(self.emas[periods]) == 0:
             latest_ema = close
         else:
-            latest_ema = self.emas[-1]
+            latest_ema = self.emas[periods][-1]
         ema = (close - latest_ema) * multiplier + latest_ema
-        self.emas.append(ema)
+        self.emas[periods].append(ema)
         # clear up
         self._clear()
         return ema
 
-    def stochastic_oscillator_5_3_3(self, k_fast_list, k_list):
+    def stochastic_oscillator(self, k_period, k_slow_period, d_period):
         """calculate the Stochastic Oscillator 5 3 3"""
-        records = self.stock.records[-5:]
+        records = self.stock.records[-k_period:]
         close = records[-1][1][-1]
         highest_high = max([x[1][1] for x in records])
         lowest_low = min([x[1][2] for x in records])
         k_fast = (close - lowest_low) / (highest_high - lowest_low) * 100
-        k_fast_list.append(k_fast)
-        k = sum(k_fast_list[-3:]) / 3
-        k_list.append(k)
-        d = sum(k_list[-3:]) / 3
+        self.k_fast_list.append(k_fast)
+        self.k_fast_list = self.k_fast_list[-k_slow_period:]
+        k = sum(self.k_fast_list) / len(self.k_fast_list)
+        self.k_list.append(k)
+        self.k_list = self.k_list[-d_period:]
+        d = sum(self.k_list) / len(self.k_list)
         return d
 
 
@@ -83,17 +89,10 @@ class BaseAlgorithm(Observer, metaclass=abc.ABCMeta):
 
     def start(self, sleep_time=0):
         """start the handlers and the run function"""
-        T3 = Thread(target=Glob().recorder.start)
-        T4 = Thread(target=Glob().handler.start)
-        T5 = Thread(target=self.run, args=(sleep_time,))
-        T5.deamon = True
-        T3.start()
-        T4.start()
-        T3.join()
-        time.sleep(65)
-        T4.join()
-        T5.start()
-        logger.debug("Scalping thread #5 launched")
+        Thr = Thread(target=self.run, args=(sleep_time,))
+        Thr.deamon = True
+        Thr.start()
+        logger.debug("Scalping launched")
 
     def notify(self, observable, event, data={}):
         logger.debug("observer notified")
