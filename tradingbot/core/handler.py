@@ -10,17 +10,14 @@ real account and place movements.
 
 import time
 import tradingAPI
-from threading import Thread
+from threading import Thread, active_count
 from ..glob import Glob
 from .utils import CommandPool
-# from .stocks import StockAnalysis
-# from .utils import (conv_limit, who_closest, ApiSupp, Movement,
-#                     CommandPool, eval_earn)
-# from ..core import events
 
 # logging
 import logging
 logger = logging.getLogger('tradingbot.handler')
+mov_log = logging.getLogger('mover')
 
 
 class Handler(object):
@@ -28,7 +25,6 @@ class Handler(object):
     def __init__(self):
         self.api = tradingAPI.API()
         self.pool = CommandPool()
-        self.stocks = []
         self.positions = []
         logger.debug("Handler initiated")
 
@@ -39,13 +35,23 @@ class Handler(object):
         # get credentials
         creds = Glob().collection['main']['general']
         self.api.login(creds['username'], creds['password'])
-        # self.start_handlePos()
-        # logger.debug("Thread #3 launched - handlePos updater")
-        # events.POSHANDLER.set()
+        Thr = Thread(target=self.handle_pos)
+        Thr.daemon = True
+        Thr.start()
+        Glob().events['HANDLEPOS_LIVE'].set()
+        logger.debug("Thread #%d launched - handle_pos launched" %
+                     active_count())
 
     def stop(self):
         """stop the handler"""
-        Glob().events['HAND_LIVE'].clear()
+        Glob().events['HANDLEPOS_LIVE'].clear()
+        # complete pool
+        timeout = time.time() + 10
+        while time.time() < timeout:
+            if self.pool.pool:
+                time.sleep(1)
+            else:
+                break
         self.api.logout()
 
     def get_pip(self, product):
@@ -55,6 +61,11 @@ class Handler(object):
             kwargs={'api': self.api, 'name': product}, timeout=100)
         return pip
 
+    def get_free_funds(self):
+        """get free funds"""
+        return self.pool.add_and_wait(
+            self.api.get_bottom_info, args=['free_funds'])
+
     def update(self):
         """check positions and update"""
         self.pool.add_and_wait_single(self.api.checkPos)
@@ -62,82 +73,54 @@ class Handler(object):
         self.positions.clear()
         for pos in self.api.positions:
             if not hasattr(pos, 'mov'):
-                logger.debug("position not handler by handler")
+                # removed for spam
+                # logger.debug("position not handled by handler")
                 continue
-            if not hasattr(pos, 'stop_limit'):
-                logger.debug("position has not stop_limit")
+            if not hasattr(pos.mov, 'unit_limit'):
+                logger.debug("position has not unit_limit")
                 continue
             self.positions.append(pos)
 
-    # def _find_mov(self, prod, price):
-    #     """find movement by prod and price"""
-    #     mov_len = [x for x in self.positions
-    #                if x.product == prod]
-    #     if len(mov_len) == 0:
-    #         return None
-    #         logger.debug("hanlder._find_mov returned None")
-    #         logger.debug(f"handler._find_mov:product: prod")
-    #     elif len(mov_len) == 1:
-    #         return mov_len[0]
-    #     elif len(mov_len) > 1:
-    #         closest_price = 0
-    #         for mov in mov_len:
-    #             closest_price = who_closest(price, closest_price, mov.price)
-    #         return [x for x in mov_len if x.price == closest_price][0]
-    #
-    # def update(self):
-    #     """check positions and update"""
-    #     self.pool.add_and_wait_single(self.api.checkPos)
-    #     for mov in self.api.movements:
-    #         movs = [x for x in self.positions if x.id == mov.id]
-    #         if not movs:
-    #             mov_fnd = self._find_mov(mov.product, mov.price)
-    #             if mov_fnd is None:
-    #                 logger.debug(
-    #                     f"movement not hanlded by bot {mov.product}")
-    #                 continue
-    #         else:
-    #             mov_fnd = movs[0]
-    #         mov_fnd.update(mov)
-    #     logger.debug("updated positions")
-    #
-    # def checkMovs(self):
-    #     pos_list = [x for x in self.positions
-    #                 if x.gain is not None or x.loss is not None
-    #                 and hasattr(x, 'curr')]
-    #     for pos in pos_list:
-    #         logger.debug(f"{pos.product} gain: {pos.gain} - loss: {pos.loss}")
-    #         if pos.mode == 'buy':
-    #             mode = (pos.curr <= pos.price - pos.loss or
-    #                     pos.curr >= pos.price + pos.gain)
-    #         elif pos.mode == 'sell':
-    #             mode = (pos.curr >= pos.price + pos.loss or
-    #                     pos.curr <= pos.price - pos.gain)
-    #         if mode:
-    #             logger.debug(f"mode: {pos.mode}, curr: {pos.curr}, " +
-    #                          f"price: {pos.price}")
-    #             earnings = eval_earn(pos.quantity, pos.curr,
-    #                                  pos.price, pos.mode)
-    #             logger.info(f"{blue('closing')} {bold(pos.product)} " +
-    #                         f"at {bold(pos.curr)} with a revenue of " +
-    #                         f"{bold(earnings)}")
-    #             if self.pool.add_and_wait(self.api.closeMov, args=[pos.id]):
-    #                 self.positions.remove(pos)
-    #
-    # def handlePos(self):
-    #     """postition handler"""
-    #     while events.POSHANDLER.wait(5):
-    #         while len(self.positions) == 0:
-    #             time.sleep(1)
-    #         self.update()
-    #         self.checkMovs()
-    #
-    # def start_handlePos(self):
-    #     """start the hanlder"""
-    #     T3 = Thread(target=self.handlePos)
-    #     T3.daemon = True
-    #     T3.start()
-    #
+    def add_mov(self, product, mode, margin, stop_limit):
+        """add movement with pool and api"""
+        self.pool.add_waituntil(self.api.addMov, args=[product], kwargs={
+            'mode': mode,
+            'auto_margin': margin,
+            'stop_limit': {
+                'gain': ['unit', stop_limit[0]],
+                'loss': ['unit', stop_limit[1]]}})
+        Glob().events['POS_LIVE'].set()
+
+    def check_positions(self):
+        """check pos limit"""
+        for pos in self.positions:
+            prices = [x.stock for x in Glob().recorder.stocks
+                      if x.product == pos.product][0].records[-1]
+            # calculate with inverted mode price for commissions
+            if pos.mode == 'buy':
+                trigger = (
+                    prices[0] >= pos.mov.buy_price + pos.mov.unit_limit[0] or
+                    prices[1] <= pos.mov.sell_price - pos.mov.unit_limit[1])
+            elif pos.mode == 'sell':
+                trigger = (
+                    prices[1] <= pos.mov.sell_price - pos.mov.unit_limit[0] or
+                    prices[0] >= pos.mov.buy_price + pos.mov.unit_limit[1])
+            if trigger:
+                mov_log.info("closing %s" % pos.product)
+                self.pool.add(pos.close)
+
+    def handle_pos(self):
+        """handle positions"""
+        while Glob().events['HANDLEPOS_LIVE'].wait(5):
+            start = time.time()
+            # if launched
+            if Glob().events['POS_LIVE'].is_set():
+                self.update()
+                if len(self.positions) == 0:
+                    Glob().events['POS_LIVE'].clear()
+                self.check_positions()
+            time.sleep(max(0, 1 - (time.time() - start)))
+
     # def addMov(self, prod, gain, loss, margin, mode="buy"):
     #     """add a movement (short or long) of a product with stop limit of pip
     #      (gain or loss), it can also accept margin to auto define the
@@ -180,9 +163,3 @@ class Handler(object):
         #         self.positions.append(
         #             Movement(new_mov_results['name'], quant=quant, gain=gain,
         #                      loss=loss, mode=mode, margin=margin, price=price))
-
-    # def closeAll(self):
-    #     """close all movements"""
-    #     self.update()
-    #     for mov in self.api.movements:
-    #         self.api.closeMov(mov.id)

@@ -25,9 +25,10 @@ file_path = {
 
 class Glob(Collector, metaclass=Singleton):
     def __init__(self):
-        self.collection = {'root': {}}
+        self.collection = {'root': {'preferences': []}}
         # init events
-        self.events = {'REC_LIVE': BotEvent(), 'HAND_LIVE': BotEvent()}
+        self.events = {'REC_LIVE': BotEvent(), 'HANDLEPOS_LIVE': BotEvent(),
+                       'POS_LIVE': BotEvent()}
         # init Observables
         self._conf_new('main')
         logger.debug("initiated observables")
@@ -52,5 +53,5 @@ class Glob(Collector, metaclass=Singleton):
         if not os.path.isfile(path):
             logger.error("strategy not found")
             raise FileNotFoundError("file not found in strategy folder")
-        self._conf_new('strategy', path)
-        return self.strategyConf
+        self._conf_new(name, path)
+        return getattr(self, name + 'Conf')

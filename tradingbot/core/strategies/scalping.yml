@@ -25,6 +25,12 @@ prefs:
   - USD/JPY zero
   - GBP/USD zero
   - USD/CHF zero
+  # - USD/RUB
+  # - EUR/RUB
+  # - bitcoin
+  # - ethereum
+  # - gold
+  # - oil
 secondary-prefs:
   EUR/USD zero: EUR/USD
   USD/JPY zero: USD/JPY

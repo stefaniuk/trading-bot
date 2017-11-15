@@ -4,82 +4,28 @@
 tradingbot.core.algorithm
 ~~~~~~~~~~~~~~
 
-This module define algorithm's abstract class and calculator.
+This module define algorithm's abstract class.
 """
 
-import time
-import os.path
 import abc
-from threading import Thread
+from threading import Thread, active_count
 from ..patterns import Observer
 from ..glob import Glob
-# from .handler import Handler
+from .calculator import new_calc
 
 # logging
 import logging
 logger = logging.getLogger('tradingbot.algorithm')
 
 
-class Calculator(object):
-    """namespace for complex predictive functions (buy conventionally)"""
-    def __init__(self, p_stock):
-        self.product = p_stock.product
-        self.stock = p_stock.candle
-        self.k_fast_list = []
-        self.k_list = []
-        self.emas = {}
-
-    def _clear(self):
-        """avoid memory overload"""
-        for key in self.emas.keys():
-            self.emas[key] = self.emas[key][-50:]
-
-    def sma(self, periods):
-        """calculate the Simple Moving Average"""
-        records = self.stock.records
-        close_list = [x[1][-1] for x in records[-periods:]]
-        return sum(close_list) / len(close_list)
-
-    def ema(self, periods):
-        """calculate the Exponential Moving Average"""
-        # instantiate ema of given period in self.emas
-        if periods not in self.emas.keys():
-            self.emas[periods] = []
-        records = self.stock.records
-        close = records[-1][1][-1]
-        multiplier = 2 / (periods + 1)
-        if len(self.emas[periods]) == 0:
-            latest_ema = close
-        else:
-            latest_ema = self.emas[periods][-1]
-        ema = (close - latest_ema) * multiplier + latest_ema
-        self.emas[periods].append(ema)
-        # clear up
-        self._clear()
-        return ema
-
-    def stochastic_oscillator(self, k_period, k_slow_period, d_period):
-        """calculate the Stochastic Oscillator 5 3 3"""
-        records = self.stock.records[-k_period:]
-        close = records[-1][1][-1]
-        highest_high = max([x[1][1] for x in records])
-        lowest_low = min([x[1][2] for x in records])
-        k_fast = (close - lowest_low) / (highest_high - lowest_low) * 100
-        self.k_fast_list.append(k_fast)
-        self.k_fast_list = self.k_fast_list[-k_slow_period:]
-        k = sum(self.k_fast_list) / len(self.k_fast_list)
-        self.k_list.append(k)
-        self.k_list = self.k_list[-d_period:]
-        d = sum(self.k_list) / len(self.k_list)
-        return d
-
-
 class BaseAlgorithm(Observer, metaclass=abc.ABCMeta):
     """abstract class for all algorithms"""
-    def __init__(self):
+    def __init__(self, strat):
         super().__init__()
+        # config algo
         self.register_obs(Glob().recorder)
-        self.strategy = Glob().collection['strategy']
+        Glob().init_strategy(strat)
+        self.strategy = Glob().collection[strat]
         # handle errors
         if not hasattr(Glob(), 'recorder'):
             raise NotImplementedError("need to implement recorder")
@@ -92,42 +38,61 @@ class BaseAlgorithm(Observer, metaclass=abc.ABCMeta):
         Thr = Thread(target=self.run, args=(sleep_time,))
         Thr.deamon = True
         Thr.start()
-        logger.debug("Scalping launched")
+        logger.debug("Thread #%d launched - %s launched" % (
+            active_count(), self.__class__.__name__))
+
+    def check(self, stock, predStock, funcs):
+        """check dependencies"""
+        # if market is closed
+        if not stock.stock.market:
+            raise InterruptedError()
+        # if stock not found in registry
+        if stock not in [x.candle for x in self.stocks]:
+            self.stocks.append(predStock(stock))
+        pred_stock = [x for x in self.stocks if x.candle == stock][0]
+        # if not initiated calculator
+        if not hasattr(pred_stock, 'calculator'):
+            pred_stock.calculator = new_calc(funcs)(pred_stock)
+        # if not observer
+        self.register_obs(pred_stock)
+        return pred_stock
 
     def notify(self, observable, event, data={}):
+        """event handler"""
         logger.debug("observer notified")
-        mov_log = logging.getLogger('mover')
         obs = observable
         if not isinstance(data, type({})):
             raise ValueError("data need to be a dict")
-        if event == 'buy':
-            mov_log.info(
-                "bought %s with margin of %s " % (obs.product, obs.margin) +
-                "with gain of %f and loss of %f" % (
-                    data['gain'], data['loss']))
-            # ADD HANDLER
-            pass
-        elif event == 'sell':
-            mov_log.info(
-                "sold %s with margin of %s with " % (obs.product, obs.margin) +
-                "gain of %f and loss of %f" % (data['gain'], data['loss']))
-            # ADD HANDLER
-            pass
-        elif event == 'unlock_run':
+        if event == 'unlock_run':
             self.run_flag = True
+        elif event == 'buy' or event == 'sell':
+            Glob().handler.add_mov(
+                obs.product, event, obs.margin, [data['gain'], data['loss']])
 
     @abc.abstractmethod
     def update(self):
-        """main run faction"""
+        """main update faction"""
 
     @abc.abstractmethod
-    def run(self):
-        """main run faction"""
+    def trigger(self):
+        """main trigger faction"""
+
+    def run(self, sleep_time=1):
+        """main run function, here it is the pivot of the algorithm"""
+        while Glob().events['REC_LIVE'].wait(5):
+            self.update()
+            self.run_flag = False
+            sleep_time -= 1
+            # after work period
+            if sleep_time < 0:
+                self.trigger()
+            # wait until next update
+            while not self.run_flag:
+                Glob().events['REC_LIVE'].wait_terminate(1)
 
     def get_margin(self):
         """get the margin of movement"""
-        # free_funds = self.handler.api.get_bottom_info('free_funds')
-        free_funds = 10000
+        free_funds = Glob().handler.get_free_funds()
         max_margin_risk = self.strategy['max_margin_risk']
         max_trans = self.strategy['max_trans']
         return free_funds * max_margin_risk / max_trans

@@ -15,6 +15,7 @@ from ..glob import Glob
 from .recorder import Recorder
 from .handler import Handler
 from .algorithms.scalper import Scalper
+from .algorithms.ross123 import Ross123
 
 # logging
 import logging
@@ -27,7 +28,8 @@ class Bot(object):
         # verbosity
         verbosity = getattr(logging, self.options.verbosity)
         logging.getLogger('tradingbot').setLevel(verbosity)
-        logging.getLogger('tradingAPI').setLevel(verbosity)
+        # CORRECT
+        logging.getLogger('tradingAPI').setLevel(logging.WARNING)
         # init Glob
         Glob()
 
@@ -38,8 +40,6 @@ class Bot(object):
             cli.cli_conf()
         else:
             logger.debug("configurer data.yml found")
-        # init strategy config
-        Glob().init_strategy(Glob().collection['main']['strategy'])
 
     def start(self):
         """start the bot"""
@@ -47,18 +47,20 @@ class Bot(object):
         # initialize base components
         Glob().recorder = Recorder()
         Glob().handler = Handler()
-        # init recorder and handlers
-        T3 = Thread(target=Glob().recorder.start)
-        T4 = Thread(target=Glob().handler.start)
-        T3.start()
-        T4.start()
-        T3.join()
-        time.sleep(65)
-        T4.join()
         # initialize algorithms
-        self.scalper = Scalper()
+        # scalper = Scalper()
+        ross123 = Ross123()
+        # start recorder and handlers
+        rec_thread = Thread(target=Glob().recorder.start)
+        hand_thread = Thread(target=Glob().handler.start)
+        rec_thread.start()
+        hand_thread.start()
+        rec_thread.join()
+        time.sleep(65)
+        hand_thread.join()
         # start algos
-        self.scalper.start(self.options.wait)
+        # scalper.start(self.options.wait)
+        ross123.start(self.options.wait)
 
     def stop(self):
         """stop the bot"""
@@ -75,7 +77,7 @@ def main():
     try:
         bot.start()
         while True:
-            time.sleep(1)
+            time.sleep(60)
     except Exception as e:
         logger.error(e)
         raise

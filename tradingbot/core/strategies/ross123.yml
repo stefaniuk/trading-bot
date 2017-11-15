@@ -1,0 +1,11 @@
+# Ross123
+# =======
+
+# margin
+max_trans: 5
+max_margin_risk: 0.65
+
+# stop limit
+auto_limit: 60
+max_variation: 0.5
+max_loss: 0.8

@@ -50,7 +50,7 @@ logging.config.dictConfig({
         },
         'mover': {
             'handlers': ['movs_handler'],
-            'level': 'INFO'
+            'level': 'DEBUG'
         }
     }
 })

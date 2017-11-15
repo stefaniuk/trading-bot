@@ -27,13 +27,10 @@ class Recorder(Observable):
     def __init__(self):
         super().__init__()
         self.config = Glob().mainConf
-        strat_name = self.config.config['strategy']
-        self.strategy = Glob().collection['strategy']
         self.monitor = self.config.config['monitor']
         self.api = API()
         # init preferences
-        Glob().collection['root']['preferences'] = self.monitor['stocks']
-        Glob().collection['root']['preferences'].extend(self.strategy['prefs'])
+        Glob().collection['root']['preferences'].extend(self.monitor['stocks'])
         self.prefs = Glob().collection['root']['preferences']
         # init stocks
         self.stocks = []
@@ -43,6 +40,7 @@ class Recorder(Observable):
 
     def start(self):
         """start the grapher and update threads"""
+        logger.debug("starting recorder")
         self.api.launch()
         self.api.login(self.monitor['username'], self.monitor['password'])
         if not int(self.monitor['initiated']):
@@ -54,10 +52,12 @@ class Recorder(Observable):
         T1.deamon = True
         T2.deamon = True
         T1.start()
+        logger.debug("Thread #%d launched - updatePrice launched" %
+                     threading.active_count())
         T2.start()
+        logger.debug("Thread #%d launched - candlestickUpdate launched" %
+                     threading.active_count())
         Glob().events['REC_LIVE'].set()
-        logger.debug("Thread #1 launched - Price updater")
-        logger.debug("Thread #2 launched - Candlestick updater")
 
     def _add_prefs(self):
         """func to add prefs"""
@@ -103,12 +103,12 @@ class Recorder(Observable):
                 candle = [x for x in self.stocks if x.stock == stock][0]
                 sell_prices = [float(record[0]) for record in stock.records]
                 buy_prices = [float(record[1]) for record in stock.records]
-                sent = stock.records[-1][2]
+                # sent = stock.records[-1][2]
                 candle.add_rec(sell_prices[0], max(sell_prices),
                                min(sell_prices), sell_prices[-1],
                                buy_prices[0], max(buy_prices),
                                min(buy_prices), buy_prices[-1])
-                candle.sentiment = sent
+                # candle.sentiment = sent
                 count += 1
             logger.debug("updated %d candlestick" % count)
             self.notify_observers(event='unlock_run')
