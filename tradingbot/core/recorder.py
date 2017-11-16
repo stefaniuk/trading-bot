@@ -109,6 +109,8 @@ class Recorder(Observable):
                                buy_prices[0], max(buy_prices),
                                min(buy_prices), buy_prices[-1])
                 # candle.sentiment = sent
+                # clear recorder values
+                stock.records.clear()
                 count += 1
             logger.debug("updated %d candlestick" % count)
             self.notify_observers(event='unlock_run')
