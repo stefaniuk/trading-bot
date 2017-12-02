@@ -103,12 +103,10 @@ class Recorder(Observable):
                 candle = [x for x in self.stocks if x.stock == stock][0]
                 sell_prices = [float(record[0]) for record in stock.records]
                 buy_prices = [float(record[1]) for record in stock.records]
-                # sent = stock.records[-1][2]
                 candle.add_rec(sell_prices[0], max(sell_prices),
                                min(sell_prices), sell_prices[-1],
                                buy_prices[0], max(buy_prices),
                                min(buy_prices), buy_prices[-1])
-                # candle.sentiment = sent
                 # clear recorder values
                 stock.records.clear()
                 count += 1
