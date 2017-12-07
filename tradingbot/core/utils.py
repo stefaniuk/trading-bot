@@ -42,7 +42,7 @@ class CommandPool(object):
                 time.sleep(1)
         raise exc
 
-    def add_waituntil(self, command, args=[], kwargs={}, timeout=60):
+    def wait_finish(self, command, args=[], kwargs={}, timeout=60):
         """add and wait to finish"""
         self.add(command, args, kwargs)
         timeout = time.time() + timeout
@@ -55,15 +55,18 @@ class CommandPool(object):
             if isinstance(res[0][1], Exception):
                 raise res[0][1]
 
-    def add_and_wait_single(self, command, args=[], kwargs={}, timeout=30):
-        self.check_add(command, args, kwargs)
-        return self.wait(command, args, kwargs, timeout)
-
-    def add_and_wait(self, command, args=[], kwargs={}, timeout=30):
+    def wait_result(self, command, args=[], kwargs={}, timeout=30):
+        """wait until result has been given"""
         self.add(command, args, kwargs)
         return self.wait(command, args, kwargs, timeout)
 
+    def wait_single_result(self, command, args=[], kwargs={}, timeout=30):
+        """check if single and wait until result has been given"""
+        self.check_add(command, args, kwargs)
+        return self.wait(command, args, kwargs, timeout)
+
     def work(self):
+        """work for every command in pool"""
         self.working = True
         for func in self.pool:
             try:
@@ -76,6 +79,7 @@ class CommandPool(object):
         self.working = False
 
     def get(self, command, args=[], kwargs={}):
+        """get result"""
         f = [command, args, kwargs]
         try:
             res = [x for x in self.results if x[0] == f][0]
