@@ -92,17 +92,15 @@ class Recorder(Observable):
             Glob().events['REC_LIVE'].wait_terminate(60)
             count = 0
             for stock in self.api.stocks:
-                if not stock.market:
-                    logger.debug("market closed for %s" % stock.product)
-                    # if [x for x in self.stocks if x.name == stock.name]:
-                    #     self.stocks.remove([x for x in self.stocks
-                    #     if x.name == stock.name][0])
-                    continue
                 if not [x for x in self.stocks if x.stock == stock]:
                     self.stocks.append(CandlestickStock(stock))
                 candle = [x for x in self.stocks if x.stock == stock][0]
+                if not stock.market:
+                    logger.debug("market closed for %s" % stock.product)
+                    continue
                 sell_prices = [float(record[0]) for record in stock.records]
                 buy_prices = [float(record[1]) for record in stock.records]
+                candle.unit = 1
                 candle.add_rec(sell_prices[0], max(sell_prices),
                                min(sell_prices), sell_prices[-1],
                                buy_prices[0], max(buy_prices),

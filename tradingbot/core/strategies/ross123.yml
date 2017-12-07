@@ -1,6 +1,10 @@
 # Ross123
 # =======
 
+# algo
+wait_start: 2
+unit: 1
+
 # margin
 max_trans: 5
 max_margin_risk: 0.65

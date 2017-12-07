@@ -114,6 +114,8 @@ class Scalper(BaseAlgorithm):
         Glob().collection['root']['preferences'].extend(self.strategy['prefs'])
         self.gain = self.strategy['gain_limit']
         self.loss = self.strategy['loss_limit']
+        self.unit = self.strategy['unit']
+        self.wait_until_start = self.strategy['wait_start']
         logger.debug("Scalper algortihm initiated")
 
     def update(self):

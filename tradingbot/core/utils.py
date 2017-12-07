@@ -50,6 +50,10 @@ class CommandPool(object):
             time.sleep(1)
             if time.time() > timeout:
                 raise TimeoutError("%s not finished" % str(command.__name__))
+        res = [x for x in self.results if [command, args, kwargs] in x]
+        if res:
+            if isinstance(res[0][1], Exception):
+                raise res[0][1]
 
     def add_and_wait_single(self, command, args=[], kwargs={}, timeout=30):
         self.check_add(command, args, kwargs)
@@ -62,7 +66,10 @@ class CommandPool(object):
     def work(self):
         self.working = True
         for func in self.pool:
-            res = func[0](*func[1], **func[2])
+            try:
+                res = func[0](*func[1], **func[2])
+            except Exception as e:
+                res = e
             if res is not None:
                 self.results.append((func, res))
         self.pool.clear()

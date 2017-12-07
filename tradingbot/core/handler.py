@@ -14,6 +14,9 @@ from threading import Thread, active_count
 from ..glob import Glob
 from .utils import CommandPool
 
+# exceptions
+import tradingAPI.exceptions
+
 # logging
 import logging
 logger = logging.getLogger('tradingbot.handler')
@@ -94,9 +97,15 @@ class Handler(object):
     def check_positions(self):
         """check pos limit"""
         for pos in self.positions:
-            prices = [x.stock for x in Glob().recorder.stocks
-                      if x.product == pos.product][0].records[-1]
-            # calculate with inverted mode price for commissions
+            stk_ls = [x.stock for x in Glob().recorder.stocks
+                      if x.product == pos.product][0]
+            if stk_ls.records:
+                prices = stk_ls.records[-1]
+            # in case of cleared prices
+            else:
+                stk_prcs = [x for x in Glob().recorder.stocks
+                            if x.product == pos.product][0].records[-1]
+                prices = [stk_prcs[0][-1], stk_prcs[1][-1]]
             if pos.mode == 'buy':
                 trigger = (
                     prices[0] >= pos.mov.buy_price + pos.mov.unit_limit[0] or
@@ -107,7 +116,10 @@ class Handler(object):
                     prices[0] >= pos.mov.buy_price + pos.mov.unit_limit[1])
             if trigger:
                 mov_log.info("closing %s" % pos.product)
-                self.pool.add(pos.close)
+                try:
+                    self.pool.add_waituntil(pos.close)
+                except tradingAPI.exceptions.PositionNotClosed:
+                    logger.warning("position just closed by website client")
 
     def handle_pos(self):
         """handle positions"""

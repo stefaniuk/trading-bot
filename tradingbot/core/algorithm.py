@@ -6,7 +6,7 @@ tradingbot.core.algorithm
 
 This module define algorithm's abstract class.
 """
-
+import time
 import abc
 from threading import Thread, active_count
 from ..patterns import Observer
@@ -77,8 +77,9 @@ class BaseAlgorithm(Observer, metaclass=abc.ABCMeta):
     def trigger(self):
         """main trigger faction"""
 
-    def run(self, sleep_time=1):
+    def run(self, sleep_time=0):
         """main run function, here it is the pivot of the algorithm"""
+        sleep_time += self.wait_until_start
         while Glob().events['REC_LIVE'].wait(5):
             self.update()
             self.run_flag = False
@@ -86,6 +87,7 @@ class BaseAlgorithm(Observer, metaclass=abc.ABCMeta):
             # after work period
             if sleep_time < 0:
                 self.trigger()
+                sleep_time = self.unit - 1
             # wait until next update
             while not self.run_flag:
                 Glob().events['REC_LIVE'].wait_terminate(1)

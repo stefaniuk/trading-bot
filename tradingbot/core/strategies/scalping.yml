@@ -1,6 +1,10 @@
 # Scalping
 # ========
 
+# algo
+wait_start: 2
+unit: 1
+
 # stochastic oscillator
 overbought: 80
 oversold: 20

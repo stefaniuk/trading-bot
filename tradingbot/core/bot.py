@@ -29,7 +29,7 @@ class Bot(object):
         verbosity = getattr(logging, self.options.verbosity)
         logging.getLogger('tradingbot').setLevel(verbosity)
         # CORRECT
-        logging.getLogger('tradingAPI').setLevel(logging.WARNING)
+        logging.getLogger('tradingAPI').setLevel(logging.INFO)
         # init Glob
         Glob()
 
@@ -56,7 +56,7 @@ class Bot(object):
         rec_thread.start()
         hand_thread.start()
         rec_thread.join()
-        time.sleep(65)
+        # time.sleep(65)
         hand_thread.join()
         # start algos
         # scalper.start(self.options.wait)
