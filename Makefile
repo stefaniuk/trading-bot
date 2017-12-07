@@ -1,4 +1,5 @@
-version = 'v0.1a1'
+oldversion = 'v0.1a1'
+version = 'v0.1a2'
 
 clean:
 	@find . -name "*.pyc" -delete
@@ -8,13 +9,11 @@ dependencies:
 
 dev-dependencies:
 	@pip install -e .
-	@pip install -r dev-requirements.txt
 
 release:
-	@sed -ic -e s/`cat VERSION`/$(version)/ setup.py tradingbot/__init__.py
+	@sed -ic -e s/$(oldversion)/$(version)/ setup.py tradingbot/__init__.py
 	@make clean
-	@echo $(version) > VERSION
-	@git add setup.py VERSION tradingAPI/__init__.py
+	@git add setup.py tradingAPI/__init__.py
 	@git commit -m "setup: bump to $(version)"
 	@git tag $(version)
 	@git push --tags
