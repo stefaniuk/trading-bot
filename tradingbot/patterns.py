@@ -13,7 +13,7 @@ class Observable(object):
     def __init__(self):
         self._observers = []
 
-    def register_observer(self, observer):
+    def attach(self, observer):
         self._observers.append(observer)
 
     def notify_observers(self, *args, **kwargs):
@@ -28,11 +28,11 @@ class Observer(object):
 
     def register_obs(self, observable):
         if self not in observable._observers:
-            observable.register_observer(self)
+            observable.attach(self)
 
     def notify(self, observable, *args, **kwargs):
         """catch the event"""
-        raise NotImplementedError()
+        raise NotImplementedError("Need to implement to catch events")
 
 
 # ~ SINGLETON ~

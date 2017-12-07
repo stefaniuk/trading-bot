@@ -44,7 +44,7 @@ class Glob(Collector, metaclass=Singleton):
             conf = Configurer(path, name)
         setattr(self, conf_name, conf)
         configured = getattr(self, conf_name)
-        configured.register_observer(self)
+        configured.attach(self)
         configured.read()
 
     def init_strategy(self, name):

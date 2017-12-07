@@ -59,19 +59,19 @@ class Handler(object):
 
     def get_pip(self, product):
         """get pip value of product"""
-        pip = self.pool.add_and_wait(
+        pip = self.pool.wait_result(
             tradingAPI.utils.get_pip,
             kwargs={'api': self.api, 'name': product}, timeout=100)
         return pip
 
     def get_free_funds(self):
         """get free funds"""
-        return self.pool.add_and_wait(
+        return self.pool.wait_result(
             self.api.get_bottom_info, args=['free_funds'])
 
     def update(self):
         """check positions and update"""
-        self.pool.add_and_wait_single(self.api.checkPos)
+        self.pool.wait_single_result(self.api.checkPos)
         # update positions
         self.positions.clear()
         for pos in self.api.positions:
@@ -86,7 +86,7 @@ class Handler(object):
 
     def add_mov(self, product, mode, margin, stop_limit):
         """add movement with pool and api"""
-        self.pool.add_waituntil(self.api.addMov, args=[product], kwargs={
+        self.pool.wait_finish(self.api.addMov, args=[product], kwargs={
             'mode': mode,
             'auto_margin': margin,
             'stop_limit': {
@@ -117,7 +117,7 @@ class Handler(object):
             if trigger:
                 mov_log.info("closing %s" % pos.product)
                 try:
-                    self.pool.add_waituntil(pos.close)
+                    self.pool.wait_finish(pos.close)
                 except tradingAPI.exceptions.PositionNotClosed:
                     logger.warning("position just closed by website client")
 
@@ -144,10 +144,10 @@ class Handler(object):
     #     stock = [x for x in self.stocks if x.name == prod][0]
     #     gain, loss = conv_limit(gain, loss, stock.name)
     #     stop_limit = {'mode': 'unit', 'value': (gain, loss)}
-    #     free_funds = self.pool.add_and_wait(self.api.get_bottom_info,
+    #     free_funds = self.pool.wait_result(self.api.get_bottom_info,
     #                                         args=['free_funds'])
     #     logger.debug(f"free funds: {free_funds}")
-    #     mov_results = self.pool.add_and_wait(
+    #     mov_results = self.pool.wait_result(
     #         self.api.addMov,
     #         args=[prod], kwargs={'mode': mode, 'stop_limit': stop_limit,
     #                              'auto_quantity': margin})
@@ -163,11 +163,11 @@ class Handler(object):
         #     if self.strategy['secondary-prefs'].get(prod):
         #         new_prod = self.strategy['secondary-prefs'][prod]
         #         logger.debug(f"Buying more {new_prod}")
-        #         unit_value = self.pool.add_and_wait(self.supp.get_unit_value,
+        #         unit_value = self.pool.wait_result(self.supp.get_unit_value,
         #                                             args=[new_prod])
         #         quant = margin // unit_value
         #         logger.debug(f"{new_prod} {quant} - {margin} : {unit_value}")
-        #         new_mov_results = self.pool.add_and_wait(
+        #         new_mov_results = self.pool.wait_result(
         #             self.api.addMov,
         #             args=[new_prod], kwargs={'quantity': quant, 'mode': mode,
         #                                      'stop_limit': stop_limit,
