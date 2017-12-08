@@ -10,7 +10,7 @@ This module control everything.
 import time
 import sys
 from threading import Thread
-from ..core.cli import cli
+from ..core.interface import cli
 from ..glob import Glob
 from .recorder import Recorder
 from .handler import Handler

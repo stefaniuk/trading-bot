@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 """
-tradingbot.core.cli.cli
+tradingbot.core.interface.cli
 ~~~~~~~~~~~~~~
 
 This module offers cli functions.
@@ -10,7 +10,7 @@ import os.path
 from getpass import getpass
 from optparse import OptionParser
 from .color import *
-from ...glob import Glob, file_path
+from ....glob import Glob, file_path
 
 # logging
 import logging

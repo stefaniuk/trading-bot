@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 """
-tradingbot.core.cli.color
+tradingbot.core.interface.color
 ~~~~~~~~~~~~~~
 This module provides color functions.
 """
