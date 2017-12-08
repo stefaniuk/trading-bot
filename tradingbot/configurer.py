@@ -56,6 +56,6 @@ class Collector(Observer, metaclass=Singleton):
         self.collection = {}
 
     def notify(self, observable, event, data):
-        if event == 'update' and isinstance(data, type({})):
+        if event == 'update' and isinstance(data, dict):
             logger.debug("observer notified")
             self.collection[observable.name] = data

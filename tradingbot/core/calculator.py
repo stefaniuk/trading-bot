@@ -10,7 +10,7 @@ This module define algorithm's calculator, complex predictive functions
 
 # logging
 import logging
-logger = logging.getLogger('tradingbot.calculator')
+logger = logging.getLogger('tradingbot.core.calculator')
 
 
 def new_calc(funcs):

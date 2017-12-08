@@ -61,7 +61,7 @@ class BaseAlgorithm(Observer, metaclass=abc.ABCMeta):
         """event handler"""
         logger.debug("observer notified")
         obs = observable
-        if not isinstance(data, type({})):
+        if not isinstance(data, dict):
             raise ValueError("data need to be a dict")
         if event == 'unlock_run':
             self.run_flag = True

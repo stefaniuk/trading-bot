@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 """
-tradingbot.core.cli
+tradingbot.core.cli.cli
 ~~~~~~~~~~~~~~
 
 This module offers cli functions.
@@ -10,7 +10,7 @@ import os.path
 from getpass import getpass
 from optparse import OptionParser
 from .color import *
-from ..glob import Glob, file_path
+from ...glob import Glob, file_path
 
 # logging
 import logging
@@ -29,7 +29,7 @@ def get_argvs():
     parser.add_option("-w", "--wait",
                       dest="wait",
                       default=1,
-                      help="minute to attend before starting main algo.",
+                      help="minute to wait before starting main algo.",
                       action="store",
                       type="int")
     parser.add_option("--conf",
@@ -66,16 +66,9 @@ def cli_conf():
     stocks = []
     if prefs:
         stocks = prefs.split(' ')
-    strat = input(printer.user_input("Strategy: "))
-    while not os.path.isfile(os.path.join(file_path['strategy'],
-                                          strat + '.yml')):
-        logger.error("strategy not found")
-        strat = input(printer.user_input(
-            "Strategy existent (not found): "))
     general = {'username': username, 'password': password}
     monitor = {'username': username2, 'password': password2,
                'stocks': stocks, 'initiated': 0}
-    Glob().mainConf.config['strategy'] = strat
     Glob().mainConf.config['general'] = general
     Glob().mainConf.config['monitor'] = monitor
     Glob().mainConf.save()

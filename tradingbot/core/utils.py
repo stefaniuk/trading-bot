@@ -10,10 +10,20 @@ This module provides utility functions that are used within tradinbot.
 import time
 # import functools - for memoize
 from threading import Thread
+from .exceptions import PoolClosed
 
 # logging
 import logging
 logger = logging.getLogger('tradingbot.utils')
+
+
+def launch_thread(th, name):
+    if not isinstance(th, Thread):
+        raise ValueError("thread not given")
+    th.daemon = True
+    th.start()
+    logger.debug("Thread #%d launched - %s launched" %
+                 (active_count(), name))
 
 
 # -~- Command Pool -~-
@@ -22,6 +32,7 @@ class CommandPool(object):
         self.pool = []
         self.results = []
         self.working = False
+        self.open = True
 
     def check_add(self, command, args=[], kwargs={}):
         cmd = [command, args, kwargs]
@@ -29,6 +40,9 @@ class CommandPool(object):
             self.add(command, args, kwargs)
 
     def add(self, command, args=[], kwargs={}):
+        if not self.open:
+            logger.warning("pool closed")
+            raise PoolClosed()
         self.pool.append([command, args, kwargs])
         if self.working is False:
             Thread(target=self.work).start()
@@ -87,3 +101,20 @@ class CommandPool(object):
             return res[1]
         except Exception:
             raise
+
+    def block(self):
+        """block pool"""
+        self.open = False
+        logger.debug("closing pool")
+
+    def close(self):
+        """close pool"""
+        self.block()
+        timeout = time.time() + 10
+        while time.time() < timeout:
+            if self.working:
+                time.sleep(1)
+            else:
+                break
+        if not self.working:
+            logger.warning("pool not closed")

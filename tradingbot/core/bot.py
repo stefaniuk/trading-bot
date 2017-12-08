@@ -10,7 +10,7 @@ This module control everything.
 import time
 import sys
 from threading import Thread
-from ..core import cli
+from ..core.cli import cli
 from ..glob import Glob
 from .recorder import Recorder
 from .handler import Handler
@@ -41,26 +41,38 @@ class Bot(object):
         else:
             logger.debug("configurer data.yml found")
 
-    def start(self):
-        """start the bot"""
-        self.conf()
-        # initialize base components
-        Glob().recorder = Recorder()
-        Glob().handler = Handler()
-        # initialize algorithms
-        # scalper = Scalper()
-        ross123 = Ross123()
-        # start recorder and handlers
+    def mount_comp(self, rec=Recorder, hand=Handler):
+        """mount rec and hand"""
+        Glob().recorder = rec()
+        Glob().handler = hand()
+
+    def start_comp(self):
+        """start components"""
         rec_thread = Thread(target=Glob().recorder.start)
         hand_thread = Thread(target=Glob().handler.start)
         rec_thread.start()
         hand_thread.start()
         rec_thread.join()
-        # time.sleep(65)
         hand_thread.join()
-        # start algos
-        # scalper.start(self.options.wait)
-        ross123.start(self.options.wait)
+
+    def init_algo(self):
+        """init all algo"""
+        for x, algo in enumerate(self.algo_list):
+            self.algo_list[x] = algo()
+
+    def start_algo(self):
+        """start all algo"""
+        for algo in self.algo_list:
+            algo.start(self.options.wait)
+
+    def start(self):
+        """start the bot"""
+        self.conf()  # configurate
+        self.mount_comp  # initialize base components
+        self.algo_list = [Ross123]
+        self.init_algo()  # initialize algorithms
+        self.start_comp()  # start recorder and handlers
+        self.start_algo()  # start algos
 
     def stop(self):
         """stop the bot"""
