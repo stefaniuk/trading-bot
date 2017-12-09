@@ -30,12 +30,11 @@ class Glob(Collector, metaclass=Singleton):
         event_list = ['REC_LIVE', 'POS_LIVE', 'HANDLEPOS_LIVE']
         for x in event_list:
             self.events[x] = BotEvent()
-        # init Observables
-        self._conf_new('main')
+        self.conf_new('main')
         logger.debug("initiated observables")
         logger.debug("initiated observer")
 
-    def _conf_new(self, name, path=None):
+    def conf_new(self, name, path=None):
         """configure new configurer"""
         conf_name = (name + 'Conf')
         logger.debug("initiated %s" % conf_name)
@@ -54,5 +53,5 @@ class Glob(Collector, metaclass=Singleton):
         if not os.path.isfile(path):
             logger.error("strategy not found")
             raise FileNotFoundError("file not found in strategy folder")
-        self._conf_new(name, path)
+        self.conf_new(name, path)
         return getattr(self, name + 'Conf')
