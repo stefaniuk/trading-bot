@@ -26,9 +26,10 @@ file_path = {
 class Glob(Collector, metaclass=Singleton):
     def __init__(self):
         self.collection = {'root': {'preferences': []}}
-        # init events
-        self.events = {'REC_LIVE': BotEvent(), 'HANDLEPOS_LIVE': BotEvent(),
-                       'POS_LIVE': BotEvent()}
+        self.events = {}  # init events
+        event_list = ['REC_LIVE', 'POS_LIVE', 'HANDLEPOS_LIVE']
+        for x in event_list:
+            self.events[x] = BotEvent()
         # init Observables
         self._conf_new('main')
         logger.debug("initiated observables")

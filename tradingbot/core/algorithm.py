@@ -22,15 +22,16 @@ class BaseAlgorithm(Observer, metaclass=abc.ABCMeta):
     """abstract class for all algorithms"""
     def __init__(self, strat):
         super().__init__()
-        # config algo
-        self.register_obs(Glob().recorder)
-        Glob().init_strategy(strat)
-        self.strategy = Glob().collection[strat]
         # handle errors
         if not hasattr(Glob(), 'recorder'):
             raise NotImplementedError("need to implement recorder")
         if not hasattr(Glob(), 'handler'):
             raise NotImplementedError("need to implement handler")
+        # config observers
+        self.register_obs(Glob().recorder)
+        # strategy
+        Glob().init_strategy(strat)
+        self.strategy = Glob().collection[strat]
         self.stocks = []
 
     def start(self, sleep_time=0):
@@ -66,7 +67,7 @@ class BaseAlgorithm(Observer, metaclass=abc.ABCMeta):
         if event == 'unlock_run':
             self.run_flag = True
         elif event == 'buy' or event == 'sell':
-            Glob().handler.add_mov(
+            Glob().handler.add_mov(  # make movement
                 obs.product, event, obs.margin, [data['gain'], data['loss']])
 
     @abc.abstractmethod

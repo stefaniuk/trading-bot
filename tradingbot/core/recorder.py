@@ -30,12 +30,9 @@ class Recorder(Observable):
         self.monitor = self.config.config['monitor']
         self.api = API()
         # init preferences
-        Glob().collection['root']['preferences'].extend(self.monitor['stocks'])
         self.prefs = Glob().collection['root']['preferences']
-        # init stocks
-        self.stocks = []
-        # instantiate in Glob
-        Glob().recorder = self
+        self.stocks = []  # init stocks
+        Glob().recorder = self  # instantiate in Glob
         logger.debug("Recorder initiated")
 
     def start(self):

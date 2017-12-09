@@ -48,7 +48,8 @@ class PredictStockRoss123(PredictStock):
 class Ross123(BaseAlgorithm):
     def __init__(self):
         super().__init__('ross123')
-        self.strategy = Glob().collection['ross123']
+        # init preferences
+        Glob().collection['root']['preferences'].extend(self.strategy['prefs'])
         self.unit = self.strategy['unit']
         self.wait_until_start = self.strategy['wait_start']
         logger.debug("Ross123 algorithm initiated")

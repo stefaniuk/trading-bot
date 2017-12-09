@@ -6,11 +6,12 @@ tradingbot.core.interface.cli
 
 This module offers cli functions.
 """
+
 import os.path
 from getpass import getpass
 from optparse import OptionParser
 from .color import *
-from ....glob import Glob, file_path
+from ...glob import Glob, file_path
 
 # logging
 import logging
@@ -49,26 +50,18 @@ def cli_conf():
     """configurate"""
     """start the guided configuration in cli"""
     print(printer.header("config"))
-    print("Add your credentials")
-    print("for Trading212")
+    print("Add your credentials for Trading212")
     print(bold(blue("--------------------")))
     username = input(printer.user_input("Username: "))
     password = getpass(printer.user_input("Password: "))
     print(bold(blue("--------------------")))
-    print("Add your information")
-    print("for a monitoring")
-    print("account")
+    print("Add your information for a monitoring account")
     print(bold(blue("--------------------")))
     username2 = input(printer.user_input("Username: "))
     password2 = getpass(printer.user_input("Password: "))
-    prefs = input(printer.user_input(
-        "Favourite stocks (sep by spaces): "))
-    stocks = []
-    if prefs:
-        stocks = prefs.split(' ')
+    print("to start this bot send /start command on telegram page")
     general = {'username': username, 'password': password}
-    monitor = {'username': username2, 'password': password2,
-               'stocks': stocks, 'initiated': 0}
+    monitor = {'username': username2, 'password': password2, 'initiated': 0}
     Glob().mainConf.config['general'] = general
     Glob().mainConf.config['monitor'] = monitor
     Glob().mainConf.save()

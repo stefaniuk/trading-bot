@@ -9,7 +9,7 @@ This module provides utility functions that are used within tradinbot.
 
 import time
 # import functools - for memoize
-from threading import Thread
+from threading import Thread, active_count
 from .exceptions import PoolClosed
 
 # logging

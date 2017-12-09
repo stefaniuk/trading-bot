@@ -13,3 +13,10 @@ max_margin_risk: 0.65
 auto_limit: 60
 max_variation: 0.5
 max_loss: 0.8
+
+# prefs
+prefs:
+  - EUR/USD zero
+  - USD/JPY zero
+  - GBP/USD zero
+  - USD/CHF zero

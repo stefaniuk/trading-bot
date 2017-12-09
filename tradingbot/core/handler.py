@@ -11,6 +11,7 @@ real account and place movements.
 import time
 import tradingAPI
 from threading import Thread, active_count
+from ..patterns import Observable
 from ..glob import Glob
 from .utils import CommandPool, launch_thread
 
@@ -23,9 +24,11 @@ logger = logging.getLogger('tradingbot.handler')
 mov_log = logging.getLogger('mover')
 
 
-class AbstractHandler(object):
+class AbstractHandler(Observable):
     """abstract class"""
     def __init__(self):
+        super().__init__()
+        self.attach(Glob().tele)  # observers
         self.api = tradingAPI.API()
         self.pool = CommandPool()
         self.positions = []
@@ -93,6 +96,10 @@ class Handler(AbstractHandler):
                 'gain': ['unit', stop_limit[0]],
                 'loss': ['unit', stop_limit[1]]}})
         Glob().events['POS_LIVE'].set()
+        self.notify_observers(event="auto-transaction", data={  # notify tele
+            'product': product, 'mode': mode, 'margin': margin,
+            'stop_limit': [stop_limit[0], stop_limit[1]]
+            })
 
     def check_positions(self):
         """check pos limit"""
@@ -116,6 +123,9 @@ class Handler(AbstractHandler):
             if trigger:
                 mov_log.info("closing %s" % pos.product)
                 try:
+                    self.notify_observers(event="close", data={
+                        'product': pos.product, 'gain': pos.gain
+                    })
                     self.pool.wait_finish(pos.close)
                 except tradingAPI.exceptions.PositionNotClosed:
                     logger.warning("position just closed by website client")

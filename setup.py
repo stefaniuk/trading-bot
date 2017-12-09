@@ -6,10 +6,12 @@ setup(
     packages=find_packages(),
     install_requires=[
         'trading212api',
-        'pyyaml'
+        'pyyaml',
+        'python-telegram-bot'
     ],
     include_package_data=True,
-    package_data={'': ['*.conf', 'logs/.null.ini'], 'tradingbot.core': ['strategies/*.yml']},
+    package_data={'': ['*.conf', 'logs/.null.ini'],
+                  'tradingbot.core': ['strategies/*.yml']},
     zip_safe=False,
     author="Federico Lolli",
     author_email="federico123579@gmail.com",
