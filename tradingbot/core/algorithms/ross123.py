@@ -9,7 +9,7 @@ This algo is based on Joe Ross techniques used in day trading,
 """
 import time
 from ...glob import Glob
-from ..algorithm import BaseAlgorithm
+from ..algorithm import BaseAlgorithm, check_secondary
 from ..stocks import PredictStock
 
 # logging
@@ -23,6 +23,8 @@ class PredictStockRoss123(PredictStock):
         super().__init__(candlestick)
         self.strategy = Glob().collection['ross123']
         self.unit = self.strategy['unit']
+        self.secondary = check_secondary(
+            self.strategy['secondary-prefs'], self.product)
 
     def auto_limit(self):
         """define gain or loss limit based on last activity"""
@@ -42,14 +44,13 @@ class PredictStockRoss123(PredictStock):
         """trigger buy or sell"""
         logger.info("it's profitable to %s %s" % (mode, self.product))
         gain, loss = self.auto_limit()
-        self.notify_observers(event=mode, data={'gain': gain, 'loss': loss})
+        self.notify_observers(event=mode, data={'gain': gain, 'loss': loss,
+                              'secondary': self.secondary})
 
 
 class Ross123(BaseAlgorithm):
     def __init__(self):
         super().__init__('ross123')
-        # init preferences
-        Glob().collection['root']['preferences'].extend(self.strategy['prefs'])
         self.unit = self.strategy['unit']
         self.wait_until_start = self.strategy['wait_start']
         logger.debug("Ross123 algorithm initiated")

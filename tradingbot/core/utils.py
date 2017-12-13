@@ -54,7 +54,7 @@ class CommandPool(object):
             except Exception as e:
                 exc = e
                 time.sleep(1)
-        raise exc
+        raise TimeoutError("timeout reached")
 
     def wait_finish(self, command, args=[], kwargs={}, timeout=60):
         """add and wait to finish"""

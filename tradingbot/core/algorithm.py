@@ -32,6 +32,9 @@ class BaseAlgorithm(Observer, metaclass=abc.ABCMeta):
         # strategy
         Glob().init_strategy(strat)
         self.strategy = Glob().collection[strat]
+        if 'prefs' in self.strategy.keys():  # init preferences
+            Glob().collection['root']['preferences'].extend(
+                self.strategy['prefs'])
         self.stocks = []
 
     def start(self, sleep_time=0):
@@ -67,16 +70,19 @@ class BaseAlgorithm(Observer, metaclass=abc.ABCMeta):
         if event == 'unlock_run':
             self.run_flag = True
         elif event == 'buy' or event == 'sell':
+            if 'secondary' not in data.keys():  # for secondary products
+                data['secondary'] = None
             Glob().handler.add_mov(  # make movement
-                obs.product, event, obs.margin, [data['gain'], data['loss']])
+                obs.product, event, obs.margin, [data['gain'], data['loss']],
+                data['secondary'])
 
     @abc.abstractmethod
     def update(self):
-        """main update faction"""
+        """main update function"""
 
     @abc.abstractmethod
     def trigger(self):
-        """main trigger faction"""
+        """main trigger function"""
 
     def run(self, sleep_time=0):
         """main run function, here it is the pivot of the algorithm"""
@@ -99,3 +105,12 @@ class BaseAlgorithm(Observer, metaclass=abc.ABCMeta):
         max_margin_risk = self.strategy['max_margin_risk']
         max_trans = self.strategy['max_trans']
         return free_funds * max_margin_risk / max_trans
+
+
+def check_secondary(secprefs, prod):
+    sec = [x[1] for x in secprefs.items()
+           if x[0].lower() in prod.lower()]
+    if sec:
+        return sec[0]
+    else:
+        return None

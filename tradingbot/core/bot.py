@@ -36,7 +36,9 @@ class Bot(object):
         logging.getLogger('tradingbot').setLevel(verbosity)
         logging.getLogger('tradingAPI').setLevel(logging.INFO)  # CORRECT
         Glob()  # init Glob
+        Glob().Bot = self
         Glob().tele = TeleHandler()
+        self.state = False
 
     def conf(self):
         """check configuration"""
@@ -72,18 +74,25 @@ class Bot(object):
 
     def start(self):
         """start the bot"""
+        if self.state:
+            logger.error("bot has already started")
+            return
         self.conf()  # configurate
         self.mount_comp()  # initiate base components
         self.algo_list = [Ross123]
         self.init_algo()  # initiate algorithms
         self.start_comp()  # start recorder and handlers
         self.start_algo()  # start algos
+        self.state = True
 
     def stop(self):
-        """stop the bot"""
+        """stop algos from telegram"""
+        if not self.state:
+            logger.error("bot has already been stopped")
+            return
         Glob().recorder.stop()
         Glob().handler.stop()
-        Glob().tele.stop()
+        self.state = False
 
 
 # Create Telegram handler
@@ -94,23 +103,69 @@ class TeleHandler(Observer):
         self.bot = telegram.Bot(token=self.token)
         self.updater = Updater(token=self.token)
         self.dispatcher = self.updater.dispatcher
-        self.state = False
         logger.debug("TeleHandler initiated")
 
     def listen(self):
         """start and listen"""
         handlers = []
         handlers.append(CommandHandler('start', self.cmd_start))
+        handlers.append(CommandHandler('stop', self.cmd_stop))
+        handlers.append(CommandHandler('restart', self.cmd_restart))
+        handlers.append(CommandHandler('update', self.cmd_update))
+        handlers.append(CommandHandler('closeall', self.cmd_close_all))
         for hand in handlers:  # add all handlers
             self.dispatcher.add_handler(hand)
         self.updater.start_polling()  # start listening
 
     def cmd_start(self, bot, update):
         """start the bot"""
-        self.state = True
         telelog.debug("start command caught")
         self.chat_id = update.message.chat_id
+        update.message.reply_text("Starting...")
+        Glob().Bot.start()
         update.message.reply_text("Bot started")  # reply with text
+
+    def cmd_stop(self, bot, update):
+        """stop the bot"""
+        telelog.debug("stop command caught")
+        update.message.reply_text("Stopping...")
+        Glob().Bot.stop()
+        update.message.reply_text("Bot stopped")
+
+    def cmd_restart(self, bot, update):
+        """restart the bot"""
+        telelog.debug("restart command caught")
+        update.message.reply_text("Restarting...")
+        Glob().Bot.stop()
+        Glob().Bot.start()
+        update.message.reply_text("Restarted")
+
+    def cmd_update(self, bot, update):
+        """update positions"""
+        telelog.debug("update command caught")
+        bot.send_chat_action(chat_id=self.chat_id, action='typing')
+        Glob().handler.update()
+        poss = Glob().handler.positions
+        text = ""
+        if not poss:
+            text = "Currently, there aren't any positions opened"
+        for pos in poss:
+            text += ("%d *%s* - gain: *%g*\n" %
+                     (pos.quantity, pos.product, pos.gain))
+        update.message.reply_text(text, parse_mode=ParseMode.MARKDOWN)
+
+    def cmd_close_all(self, bot, update):
+        """close all positions"""
+        telelog.debug("close_all command caught")
+        update.message.reply_text("Closing all positions...")
+        count = 0
+        gain = 0
+        for pos in Glob().handler.positions:
+            pos.close()
+            count += 1
+            gain += pos.gain
+        update.message.reply_text("Closed %d positions with gain of *%g*" %
+                                  (count, gain), parse_mode=ParseMode.MARKDOWN)
 
     def stop(self):
         """stop listening"""
@@ -118,9 +173,6 @@ class TeleHandler(Observer):
 
     def notify(self, observable, event, data):
         """catch the event"""
-        if not self.state:
-            telelog.debug("TeleHandler not online")
-            return
         if event == 'auto-transaction':
             if data['mode'] == 'buy':
                 mode = 'Bought'
@@ -128,9 +180,9 @@ class TeleHandler(Observer):
                 mode = 'Sold'
             text = ("%s *%s* with auto margin of %g" +
                     " and a stop limit of %g and %g") % (
-                        mode, data['product'], round(data['margin'], 3),
-                        round(data['stop_limit'][0], 5),
-                        round(data['stop_limit'][1], 5))
+                        mode, data['product'], data['margin'],
+                        data['stop_limit'][0],
+                        data['stop_limit'][1])
         if event == 'close':
             text = ("Closed %s position with a gain of *%g*" %
                     (data['product'], data['gain']))
@@ -169,7 +221,6 @@ def main():
         sys.exit()
     Glob().tele.listen()
     try:
-        bot.start()
         while True:
             time.sleep(60)
     except Exception as e:
@@ -178,6 +229,7 @@ def main():
     except KeyboardInterrupt as e:
         sys.stderr.write('\r' + "exiting...\n")
         bot.stop()
+        Glob().tele.stop()
         sys.exit()
 
 

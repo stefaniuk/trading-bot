@@ -2,7 +2,6 @@ import os.path
 import logging
 import logging.config
 import tradingbot.core
-import tradingbot.core
 
 logging.config.dictConfig({
     'version': 1,

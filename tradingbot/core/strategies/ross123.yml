@@ -20,3 +20,11 @@ prefs:
   - USD/JPY zero
   - GBP/USD zero
   - USD/CHF zero
+  - Gold
+  - German30
+  - Bitcoin 0.1
+secondary-prefs:
+  EUR/USD zero: EUR/USD
+  USD/JPY zero: USD/JPY
+  GBP/USD zero: GBP/USD
+  USD/CHF zero: USD/CHF

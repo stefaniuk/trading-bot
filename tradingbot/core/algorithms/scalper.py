@@ -10,7 +10,7 @@ This algo is based on the Scalping technique used in day trading,
 """
 
 from ...glob import Glob
-from ..algorithm import BaseAlgorithm
+from ..algorithm import BaseAlgorithm, check_secondary
 from ..stocks import PredictStock
 
 # logging
@@ -26,6 +26,8 @@ class PredictStockScalper(PredictStock):
         self.overbought = self.strategy['overbought']
         self.oversold = self.strategy['oversold']
         self.momentum = []
+        self.secondary = check_secondary(
+            self.strategy['secondary-prefs'], self.product)
 
     def clear(self):
         """avoid memory overlaod"""
@@ -103,15 +105,14 @@ class PredictStockScalper(PredictStock):
             logger.info("It's profitable to sell %s" % self.product)
             # notify observer
             self.notify_observers(
-                event='sell', data={'gain': gain, 'loss': loss})
+                event='sell', data={'gain': gain, 'loss': loss,
+                                    'secondary': self.secondary})
 
 
 class Scalper(BaseAlgorithm):
     """Scalper algorithm class"""
     def __init__(self):
         super().__init__('scalping')
-        # init preferences
-        Glob().collection['root']['preferences'].extend(self.strategy['prefs'])
         self.gain = self.strategy['gain_limit']
         self.loss = self.strategy['loss_limit']
         self.unit = self.strategy['unit']
@@ -130,8 +131,6 @@ class Scalper(BaseAlgorithm):
             # calculate
             pred_stock.ema_50 = pred_stock.calculator.ema(50)
             pred_stock.ema_100 = pred_stock.calculator.ema(100)
-            # get the last price (use the buy price conventionally)
-            price = pred_stock.candle.stock.records[-1][1]
             try:
                 momentum = pred_stock.calculator.stochastic_oscillator(5, 3, 3)
             # catch highest price equals to lowest

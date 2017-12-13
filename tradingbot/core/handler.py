@@ -87,23 +87,31 @@ class Handler(AbstractHandler):
                 continue
             self.positions.append(pos)
 
-    def add_mov(self, product, mode, margin, stop_limit):
+    def add_mov(self, product, mode, margin, stop_limit, secondary=None):
         """add movement with pool and api"""
-        self.pool.wait_finish(self.api.addMov, args=[product], kwargs={
-            'mode': mode,
-            'auto_margin': margin,
-            'stop_limit': {
-                'gain': ['unit', stop_limit[0]],
-                'loss': ['unit', stop_limit[1]]}})
-        Glob().events['POS_LIVE'].set()
-        self.notify_observers(event="auto-transaction", data={  # notify tele
-            'product': product, 'mode': mode, 'margin': margin,
-            'stop_limit': [stop_limit[0], stop_limit[1]]
-            })
+        while margin > 0:
+            used = self.pool.wait_result(
+                self.api.addMov, args=[product], kwargs={
+                    'mode': mode,
+                    'auto_margin': margin,
+                    'stop_limit': {
+                        'gain': ['unit', stop_limit[0]],
+                        'loss': ['unit', stop_limit[1]]}})
+            Glob().events['POS_LIVE'].set()
+            self.notify_observers(event="auto-transaction", data={
+                'product': product, 'mode': mode, 'margin': used,
+                'stop_limit': [stop_limit[0], stop_limit[1]]
+                })
+            if secondary is not None:  # if secondary product
+                product = secondary
+                margin -= used  # margin left
+            else:
+                margin = 0  # end cycle
 
     def check_positions(self):
         """check pos limit"""
         for pos in self.positions:
+            logger.debug("pos_prod: %s" % pos.product)
             stk_ls = [x.stock for x in Glob().recorder.stocks
                       if x.product == pos.product][0]
             if stk_ls.records:
@@ -135,8 +143,9 @@ class Handler(AbstractHandler):
         while Glob().events['HANDLEPOS_LIVE'].wait(5):
             start = time.time()
             if Glob().events['POS_LIVE'].is_set():  # if launched
+                old_pos_n = len(self.positions)
                 self.update()
-                if len(self.positions) == 0:
+                if old_pos_n > len(self.positions) == 0:
                     Glob().events['POS_LIVE'].clear()
                 self.check_positions()
             time.sleep(max(0, 1 - (time.time() - start)))
