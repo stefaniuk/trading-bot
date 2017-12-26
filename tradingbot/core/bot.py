@@ -9,6 +9,8 @@ This module control everything.
 
 import time
 import sys
+import os.path
+from datetime import datetime
 from threading import Thread
 from ..core.interface import cli
 from ..patterns import Observer
@@ -164,6 +166,7 @@ class TeleHandler(Observer):
             pos.close()
             count += 1
             gain += pos.gain
+            self.update_register(pos.product, pos.gain)
         update.message.reply_text("Closed %d positions with gain of *%g*" %
                                   (count, gain), parse_mode=ParseMode.MARKDOWN)
 
@@ -178,16 +181,26 @@ class TeleHandler(Observer):
                 mode = 'Bought'
             else:
                 mode = 'Sold'
-            text = ("%s *%s* with auto margin of %g" +
+            text = ("%s %d *%s* with auto margin of %g" +
                     " and a stop limit of %g and %g") % (
-                        mode, data['product'], data['margin'],
-                        data['stop_limit'][0],
+                        mode, data['quantity'], data['product'],
+                        data['margin'], data['stop_limit'][0],
                         data['stop_limit'][1])
         if event == 'close':
             text = ("Closed %s position with a gain of *%g*" %
                     (data['product'], data['gain']))
+            self.update_register(data['product'], data['gain'])
         self.bot.send_message(chat_id=self.chat_id, text=text,
                               parse_mode=ParseMode.MARKDOWN)
+
+    def update_register(self, product, gain):
+        """update a transaction register"""
+        dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'logs')
+        now = datetime.now()
+        date = "%d-%.2d-%.2d" % (now.year, now.month, now.day)
+        time = "%.2d:%.2d:%.2d" % (now.hour, now.minute, now.second)
+        with open(os.path.join(dir, 'transaction-register.csv')) as f:
+            f.write(','.join([date,time,product, gain]))
 
 
 # Create a button menu to show in Telegram messages

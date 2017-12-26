@@ -76,6 +76,7 @@ class Handler(AbstractHandler):
 
     def update(self):
         """check positions and update"""
+        self.old_pos = self.positions
         self.pool.wait_single_result(self.api.checkPos)
         # update positions
         self.positions.clear()
@@ -97,28 +98,36 @@ class Handler(AbstractHandler):
                     'stop_limit': {
                         'gain': ['unit', stop_limit[0]],
                         'loss': ['unit', stop_limit[1]]}})
+            if used == 0:
+                return
             Glob().events['POS_LIVE'].set()
             self.notify_observers(event="auto-transaction", data={
-                'product': product, 'mode': mode, 'margin': used,
-                'stop_limit': [stop_limit[0], stop_limit[1]]
+                'product': product, 'mode': mode, 'quantity': used['quantity'],
+                'margin': used['margin'], 'stop_limit': [stop_limit[0], stop_limit[1]]
                 })
             if secondary is not None:  # if secondary product
                 product = secondary
-                margin -= used  # margin left
+                margin -= used['margin']  # margin left
             else:
                 margin = 0  # end cycle
 
     def check_positions(self):
         """check pos limit"""
+        for pos in self.old_pos:
+            if pos not in self.positions:
+                self.notify_observers(event="close", data={
+                    'product': pos.product, 'gain': pos.gain
+                })
         for pos in self.positions:
-            logger.debug("pos_prod: %s" % pos.product)
             stk_ls = [x.stock for x in Glob().recorder.stocks
-                      if x.product == pos.product][0]
+                      if x.product == pos.product or
+                      pos.product in x.product][0]  # very ugly resolution
             if stk_ls.records:
                 prices = stk_ls.records[-1]
             else:  # in case of cleared prices
                 stk_prcs = [x for x in Glob().recorder.stocks
-                            if x.product == pos.product][0].records[-1]
+                            if x.product == pos.product or
+                            pos.product in x.product][0].records[-1]
                 prices = [stk_prcs[0][-1], stk_prcs[1][-1]]
             if pos.mode == 'buy':
                 trigger = (
@@ -145,7 +154,7 @@ class Handler(AbstractHandler):
             if Glob().events['POS_LIVE'].is_set():  # if launched
                 old_pos_n = len(self.positions)
                 self.update()
+                self.check_positions()
                 if old_pos_n > len(self.positions) == 0:
                     Glob().events['POS_LIVE'].clear()
-                self.check_positions()
             time.sleep(max(0, 1 - (time.time() - start)))
